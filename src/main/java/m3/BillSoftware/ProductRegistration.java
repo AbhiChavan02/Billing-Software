@@ -13,10 +13,12 @@ public class ProductRegistration extends javax.swing.JFrame {
     private JLabel lblBarcode, lblProductName, lblCategory, lblPricePerGram, lblStockQuantity;
     private JTextField txtBarcode, txtProductName, txtPricePerGram, txtStockQuantity;
     private JComboBox<String> cmbCategory;
-    private JButton btnRegister, btnClear;
+    private JButton btnRegister, btnClear, btnExit;
     private JPanel panelInput, panelActions;
+    private MainFrame MainFrame;  // Reference to the MainFrame class
 
-    public ProductRegistration() {
+    public ProductRegistration(MainFrame MainFrame) {
+        this.MainFrame = MainFrame;  // Initialize the reference to the main frame
         initComponents();
     }
 
@@ -32,8 +34,9 @@ public class ProductRegistration extends javax.swing.JFrame {
         txtPricePerGram = new JTextField();
         txtStockQuantity = new JTextField();
         cmbCategory = new JComboBox<>(new String[]{"Gold", "Silver", "Platinum"});
-        btnRegister = new JButton("Register Product");
+        btnRegister = new JButton("Product Registration");
         btnClear = new JButton("Clear");
+        btnExit = new JButton("Exit");
         panelInput = new JPanel();
         panelActions = new JPanel();
 
@@ -59,14 +62,16 @@ public class ProductRegistration extends javax.swing.JFrame {
         // Add components to action panel
         panelActions.add(btnRegister);
         panelActions.add(btnClear);
+        panelActions.add(btnExit);  // Exit button added
         add(panelActions);
 
         // Button actions
         btnRegister.addActionListener(evt -> registerProduct());
         btnClear.addActionListener(evt -> clearFields());
+        btnExit.addActionListener(evt -> exitApplication());  // Exit button action
 
         pack();
-        setSize(400, 300);
+        setSize(1000, 1000);
         setLocationRelativeTo(null);
     }
 
@@ -127,7 +132,23 @@ public class ProductRegistration extends javax.swing.JFrame {
         cmbCategory.setSelectedIndex(0);
     }
 
+    private void exitApplication() {
+        int confirmExit = JOptionPane.showConfirmDialog(this, "Are you sure you want to exit?", "Exit", JOptionPane.YES_NO_OPTION);
+        if (confirmExit == JOptionPane.YES_OPTION) {
+            this.setVisible(false);
+            this.dispose();
+            MainFrame.setVisible(true);  // Show the main frame when exiting
+        }
+    }
+
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new ProductRegistration().setVisible(true));
+        // Create the main frame instance
+        MainFrame MainFrame = new MainFrame();
+
+        // Start the ProductRegistration window with a reference to the main frame
+        java.awt.EventQueue.invokeLater(() -> {
+            new ProductRegistration(MainFrame).setVisible(true);
+            MainFrame.setVisible(false);  // Initially hide the main frame
+        });
     }
 }

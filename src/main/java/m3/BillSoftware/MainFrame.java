@@ -12,29 +12,46 @@ public class MainFrame extends javax.swing.JFrame {
     
     public MainFrame() {
         setTitle("Jewelry POS System - Main Menu");
-        setSize(400, 200);
-        setLayout(new GridLayout(3, 1));
+        setSize(800, 400);
+        setLayout(new GridLayout(4, 1));
 
-        JButton btnRegisterProduct = new JButton("Register Product");
+        JButton btnRegisterProduct = new JButton("Product Registration");
         JButton btnProcessSales = new JButton("Process Sales");
+        JButton btnRegisteredProduct = new JButton("Registered Product");
         JButton btnLogout = new JButton("Logout");
 
         add(btnRegisterProduct);
         add(btnProcessSales);
+        add(btnRegisteredProduct);
         add(btnLogout);
 
-        btnRegisterProduct.addActionListener(e -> new ProductRegistration().setVisible(true));
-        btnProcessSales.addActionListener(e -> new ProcessSales().setVisible(true));
+        // Product Registration Button - open ProductRegistration
+        btnRegisterProduct.addActionListener(e -> {
+            dispose();  // Close MainFrame window
+            new ProductRegistration(this).setVisible(true);  // Open ProductRegistration window and pass MainFrame as reference
+        });
+
+        // Process Sales Button - open ProcessSales
+        btnProcessSales.addActionListener(e -> {
+            dispose();  // Close MainFrame
+            new ProcessSales(null).setVisible(true);  // Open ProcessSales
+        });
+
+        // Registered Product Button - open RegisteredProducts
+        btnRegisteredProduct.addActionListener(e -> {
+            dispose();  // Close MainFrame
+            new RegisteredProducts().setVisible(true);  // Open RegisteredProducts
+        });
+
+        // Logout Button - open Login and close MainFrame
         btnLogout.addActionListener(e -> {
-            dispose();
-            new Login().setVisible(true);
+            dispose();  // Close MainFrame
+            new Login().setVisible(true);  // Open Login screen
         });
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
     }
-    
-   
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -98,4 +115,5 @@ public class MainFrame extends javax.swing.JFrame {
 
     // Variables declaration - do not modify                     
     // End of variables declaration                   
+    
 }
