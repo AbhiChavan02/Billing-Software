@@ -165,9 +165,10 @@ public class RegisteredProducts {
         SwingUtilities.invokeLater(RegisteredProducts::new);
     }
 
-	public Object setVisible(boolean b) {
+	public void setVisible(boolean b) {
 		// TODO Auto-generated method stub
-		return null;
+		
 	}
+
 }
 

@@ -10,6 +10,7 @@ import javax.swing.*;
 public class ProcessSales extends javax.swing.JFrame {
 
     private MainFrame MainFrame;  // Reference to the MainFrame class
+    private javax.swing.JButton btnLastTransaction;
 
     public ProcessSales(MainFrame MainFrame) {
         this.MainFrame = MainFrame;  // Initialize the reference to the main frame
@@ -36,6 +37,11 @@ public class ProcessSales extends javax.swing.JFrame {
         btnClear = new javax.swing.JButton();
         btnRefresh = new javax.swing.JButton();
         btnExit = new javax.swing.JButton();  // Exit button added
+
+        // Last Transaction Button
+        btnLastTransaction = new javax.swing.JButton();
+        btnLastTransaction.setText("Last Transaction");
+        btnLastTransaction.addActionListener(evt -> showLastTransaction());
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Process Sales");
@@ -121,7 +127,11 @@ public class ProcessSales extends javax.swing.JFrame {
                     .addGap(52, 52, 52))
                 .addGroup(layout.createSequentialGroup()
                     .addGap(200, 200, 200)
-                    .addComponent(btnExit)  // Exit button placed here
+                    .addComponent(btnExit)
+                    .addGap(200, 200, 200))
+                .addGroup(layout.createSequentialGroup()
+                    .addGap(200, 200, 200)
+                    .addComponent(btnLastTransaction)  // Last Transaction button added here
                     .addGap(200, 200, 200))
         );
         layout.setVerticalGroup(
@@ -161,7 +171,10 @@ public class ProcessSales extends javax.swing.JFrame {
                         .addComponent(btnProcess)
                         .addComponent(btnClear))
                     .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                    .addComponent(btnExit)  // Exit button
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(btnLastTransaction))  // Last Transaction button
+                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                    .addComponent(btnExit)
                     .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -193,37 +206,53 @@ public class ProcessSales extends javax.swing.JFrame {
         }
     }
 
-    private void processSale() {
+    private void showLastTransaction() {
         try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
-            MongoCollection<Document> productCollection = database.getCollection("Product");
+            MongoCollection<Document> salesCollection = database.getCollection("Sales");
 
-            String barcode = txtBarcode.getText();
-            int quantity = Integer.parseInt(txtQuantity.getText());
-            double weight = Double.parseDouble(txtWeight.getText());
-
-            Document product = productCollection.find(new Document("barcode", barcode)).first();
-            if (product != null) {
-                int stockQuantity = product.getInteger("stockQuantity");
-                if (quantity > stockQuantity) {
-                    JOptionPane.showMessageDialog(this, "Insufficient stock.");
-                    return;
-                }
-
-                double pricePerGram = product.getDouble("pricePerGram");
-                double totalPrice = weight * pricePerGram;
-
-                productCollection.updateOne(new Document("barcode", barcode),
-                        new Document("$set", new Document("stockQuantity", stockQuantity - quantity)));
-
-                txtTotalPrice.setText(String.valueOf(totalPrice));
-                JOptionPane.showMessageDialog(this, "Sale processed successfully!");
-                clearFields();
+            Document lastTransaction = salesCollection.find().sort(new Document("timestamp", -1)).first();
+            if (lastTransaction != null) {
+                String message = String.format("Last Transaction:\nProduct Name: %s\nQuantity: %d\nWeight: %.2f grams\nTotal Price: %.2f\nDate: %s",
+                        lastTransaction.getString("productName"),
+                        lastTransaction.getInteger("quantity"),
+                        lastTransaction.getDouble("weight"),
+                        lastTransaction.getDouble("totalPrice"),
+                        lastTransaction.getDate("timestamp").toString());
+                JOptionPane.showMessageDialog(this, message);
             } else {
-                JOptionPane.showMessageDialog(this, "Product not found.");
+                JOptionPane.showMessageDialog(this, "No transactions found.");
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error processing sale: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, "Error fetching last transaction: " + e.getMessage());
+        }
+    }
+
+    private void processSale() {
+        try {
+            double pricePerGram = Double.parseDouble(txtPricePerGram.getText());
+            int quantity = Integer.parseInt(txtQuantity.getText());
+            double weight = Double.parseDouble(txtWeight.getText());
+            double totalPrice = pricePerGram * weight;
+
+            txtTotalPrice.setText(String.valueOf(totalPrice));
+
+            // Save sale to MongoDB
+            try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
+                MongoDatabase database = mongoClient.getDatabase("testDB");
+                MongoCollection<Document> salesCollection = database.getCollection("Sales");
+
+                Document sale = new Document("productName", txtProductName.getText())
+                        .append("quantity", quantity)
+                        .append("weight", weight)
+                        .append("totalPrice", totalPrice)
+                        .append("timestamp", new java.util.Date());
+
+                salesCollection.insertOne(sale);
+                JOptionPane.showMessageDialog(this, "Sale processed successfully!");
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Invalid input. Please enter valid numbers.");
         }
     }
 
@@ -238,27 +267,27 @@ public class ProcessSales extends javax.swing.JFrame {
     }
 
     private void exitApplication() {
-        int confirmExit = JOptionPane.showConfirmDialog(this, "Are you sure you want to exit?", "Exit", JOptionPane.YES_NO_OPTION);
-        if (confirmExit == JOptionPane.YES_OPTION) {
-            this.setVisible(false);
-            this.dispose();
-            MainFrame.setVisible(true);  // Show the main frame when exiting
+        this.setVisible(false);  // Hide ProcessSales window
+        if (MainFrame != null) {
+            MainFrame.setVisible(true);  // Show MainFrame
         }
     }
-
-    public static void main(String args[]) {
-        // Create the main frame instance
-        MainFrame MainFrame = new MainFrame();
-
-        // Start the ProcessSales window with a reference to the main frame
-        java.awt.EventQueue.invokeLater(() -> {
-            new ProcessSales(MainFrame).setVisible(true);
-            MainFrame.setVisible(false);  // Initially hide the main frame
+    
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                MainFrame mainFrame = new MainFrame(); // Create MainFrame instance first
+                ProcessSales processSales = new ProcessSales(mainFrame); // Pass it to ProcessSales constructor
+                processSales.setVisible(true);
+                mainFrame.setVisible(false); // Hide the main frame if necessary
+            }
         });
     }
 
     private javax.swing.JButton btnClear;
-    private javax.swing.JButton btnExit;  // Exit button
+    private javax.swing.JButton btnExit;
+    private javax.swing.JButton btnLastTransaction1;  // Last Transaction button
     private javax.swing.JButton btnProcess;
     private javax.swing.JButton btnRefresh;
     private javax.swing.JLabel lblBarcode;

@@ -12,23 +12,27 @@ public class MainFrame extends javax.swing.JFrame {
     
     public MainFrame() {
         setTitle("Jewelry POS System - Main Menu");
-        setSize(800, 400);
-        setLayout(new GridLayout(4, 1));
+        setSize(800, 500);  // Adjusted size for the new button
+        setLayout(new GridLayout(5, 1));  // Updated to 5 rows, 1 column
 
+        // Initialize buttons
         JButton btnRegisterProduct = new JButton("Product Registration");
         JButton btnProcessSales = new JButton("Process Sales");
         JButton btnRegisteredProduct = new JButton("Registered Product");
+        JButton btnSalesHistory = new JButton("Sales History");  // New button
         JButton btnLogout = new JButton("Logout");
 
+        // Add buttons to the frame
         add(btnRegisterProduct);
         add(btnProcessSales);
         add(btnRegisteredProduct);
+        add(btnSalesHistory);  // Added Sales History button
         add(btnLogout);
 
         // Product Registration Button - open ProductRegistration
         btnRegisterProduct.addActionListener(e -> {
             dispose();  // Close MainFrame window
-            new ProductRegistration(this).setVisible(true);  // Open ProductRegistration window and pass MainFrame as reference
+            new ProductRegistration(this).setVisible(true);  // Open ProductRegistration window
         });
 
         // Process Sales Button - open ProcessSales
@@ -43,6 +47,12 @@ public class MainFrame extends javax.swing.JFrame {
             new RegisteredProducts().setVisible(true);  // Open RegisteredProducts
         });
 
+        // Sales History Button - open SalesHistory
+        btnSalesHistory.addActionListener(e -> {
+            dispose();  // Close MainFrame
+            new SalesHistory().setVisible(true);  // Open SalesHistory window
+        });
+
         // Logout Button - open Login and close MainFrame
         btnLogout.addActionListener(e -> {
             dispose();  // Close MainFrame
@@ -50,7 +60,7 @@ public class MainFrame extends javax.swing.JFrame {
         });
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+        setLocationRelativeTo(null);  // Center the window
     }
 
     /**
