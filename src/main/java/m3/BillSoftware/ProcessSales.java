@@ -13,12 +13,18 @@ public class ProcessSales extends javax.swing.JFrame {
     private javax.swing.JButton btnLastTransaction;
 
     public ProcessSales(MainFrame MainFrame) {
-        this.MainFrame = MainFrame;  // Initialize the reference to the main frame
+        this.MainFrame = MainFrame;
+        if (this.MainFrame == null) {
+            System.out.println("DEBUG: MainFrame passed to ProcessSales is null!");
+        } else {
+            System.out.println("DEBUG: MainFrame passed to ProcessSales is not null.");
+        }
         initComponents();
     }
 
     @SuppressWarnings("unchecked")
     private void initComponents() {
+    	
         lblBarcode = new javax.swing.JLabel();
         txtBarcode = new javax.swing.JTextField();
         lblProductName = new javax.swing.JLabel();
@@ -45,6 +51,8 @@ public class ProcessSales extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Process Sales");
+        
+        
 
         lblBarcode.setText("Barcode:");
         txtBarcode.setPreferredSize(new java.awt.Dimension(200, 30));
@@ -233,28 +241,53 @@ public class ProcessSales extends javax.swing.JFrame {
             double pricePerGram = Double.parseDouble(txtPricePerGram.getText());
             int quantity = Integer.parseInt(txtQuantity.getText());
             double weight = Double.parseDouble(txtWeight.getText());
-            double totalPrice = pricePerGram * weight;
-
+            double totalPrice = pricePerGram * weight * quantity; // Adjusted formula
             txtTotalPrice.setText(String.valueOf(totalPrice));
 
-            // Save sale to MongoDB
+            // Save sale to MongoDB and update stock quantity
             try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
                 MongoDatabase database = mongoClient.getDatabase("testDB");
                 MongoCollection<Document> salesCollection = database.getCollection("Sales");
+                MongoCollection<Document> productCollection = database.getCollection("Product");
 
-                Document sale = new Document("productName", txtProductName.getText())
-                        .append("quantity", quantity)
-                        .append("weight", weight)
-                        .append("totalPrice", totalPrice)
-                        .append("timestamp", new java.util.Date());
+                String barcode = txtBarcode.getText();
 
-                salesCollection.insertOne(sale);
-                JOptionPane.showMessageDialog(this, "Sale processed successfully!");
+                // Fetch product details
+                Document product = productCollection.find(new Document("barcode", barcode)).first();
+                if (product != null) {
+                    int currentStock = product.getInteger("stockQuantity");
+
+                    // Check if sufficient stock is available
+                    if (quantity > currentStock) {
+                        JOptionPane.showMessageDialog(this, "Insufficient stock available!");
+                        return;
+                    }
+
+                    // Update stock quantity
+                    int newStock = currentStock - quantity;
+                    productCollection.updateOne(new Document("barcode", barcode),
+                            new Document("$set", new Document("stockQuantity", newStock)));
+
+                    // Save sale to sales collection
+                    Document sale = new Document("productName", txtProductName.getText())
+                            .append("quantity", quantity)
+                            .append("weight", weight)
+                            .append("totalPrice", totalPrice)
+                            .append("timestamp", new java.util.Date());
+                    salesCollection.insertOne(sale);
+
+                    JOptionPane.showMessageDialog(this, "Sale processed successfully!");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Product not found.");
+                }
             }
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(this, "Invalid input. Please enter valid numbers.");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error processing sale: " + e.getMessage());
         }
     }
+
 
     private void clearFields() {
         txtBarcode.setText("");
@@ -267,21 +300,19 @@ public class ProcessSales extends javax.swing.JFrame {
     }
 
     private void exitApplication() {
-        this.setVisible(false);  // Hide ProcessSales window
-        if (MainFrame != null) {
-            MainFrame.setVisible(true);  // Show MainFrame
+        this.dispose(); // Close the current window
+        if (MainFrame == null) {
+            System.out.println("MainFrame is NULL, creating a new instance...");
+            MainFrame = new MainFrame(); // Create a new MainFrame instance
         }
+        MainFrame.setVisible(true); // Show the MainFrame
     }
     
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                MainFrame mainFrame = new MainFrame(); // Create MainFrame instance first
-                ProcessSales processSales = new ProcessSales(mainFrame); // Pass it to ProcessSales constructor
-                processSales.setVisible(true);
-                mainFrame.setVisible(false); // Hide the main frame if necessary
-            }
+        SwingUtilities.invokeLater(() -> {
+            MainFrame mainFrame = new MainFrame(); // Create the MainFrame instance
+            ProcessSales processSales = new ProcessSales(mainFrame); // Pass MainFrame to ProcessSales
+            processSales.setVisible(true); // Show the ProcessSales window
         });
     }
 
