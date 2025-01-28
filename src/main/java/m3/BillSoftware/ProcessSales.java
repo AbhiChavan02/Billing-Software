@@ -10,7 +10,6 @@ import javax.swing.*;
 public class ProcessSales extends javax.swing.JFrame {
 
     private MainFrame MainFrame;  // Reference to the MainFrame class
-    private javax.swing.JButton btnLastTransaction;
 
     public ProcessSales(MainFrame MainFrame) {
         this.MainFrame = MainFrame;
@@ -24,7 +23,6 @@ public class ProcessSales extends javax.swing.JFrame {
 
     @SuppressWarnings("unchecked")
     private void initComponents() {
-    	
         lblBarcode = new javax.swing.JLabel();
         txtBarcode = new javax.swing.JTextField();
         lblProductName = new javax.swing.JLabel();
@@ -44,15 +42,8 @@ public class ProcessSales extends javax.swing.JFrame {
         btnRefresh = new javax.swing.JButton();
         btnExit = new javax.swing.JButton();  // Exit button added
 
-        // Last Transaction Button
-        btnLastTransaction = new javax.swing.JButton();
-        btnLastTransaction.setText("Last Transaction");
-        btnLastTransaction.addActionListener(evt -> showLastTransaction());
-
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Process Sales");
-        
-        
 
         lblBarcode.setText("Barcode:");
         txtBarcode.setPreferredSize(new java.awt.Dimension(200, 30));
@@ -137,10 +128,6 @@ public class ProcessSales extends javax.swing.JFrame {
                     .addGap(200, 200, 200)
                     .addComponent(btnExit)
                     .addGap(200, 200, 200))
-                .addGroup(layout.createSequentialGroup()
-                    .addGap(200, 200, 200)
-                    .addComponent(btnLastTransaction)  // Last Transaction button added here
-                    .addGap(200, 200, 200))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -179,9 +166,6 @@ public class ProcessSales extends javax.swing.JFrame {
                         .addComponent(btnProcess)
                         .addComponent(btnClear))
                     .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(btnLastTransaction))  // Last Transaction button
-                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                     .addComponent(btnExit)
                     .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -211,28 +195,6 @@ public class ProcessSales extends javax.swing.JFrame {
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error connecting to the database: " + e.getMessage());
-        }
-    }
-
-    private void showLastTransaction() {
-        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
-            MongoDatabase database = mongoClient.getDatabase("testDB");
-            MongoCollection<Document> salesCollection = database.getCollection("Sales");
-
-            Document lastTransaction = salesCollection.find().sort(new Document("timestamp", -1)).first();
-            if (lastTransaction != null) {
-                String message = String.format("Last Transaction:\nProduct Name: %s\nQuantity: %d\nWeight: %.2f grams\nTotal Price: %.2f\nDate: %s",
-                        lastTransaction.getString("productName"),
-                        lastTransaction.getInteger("quantity"),
-                        lastTransaction.getDouble("weight"),
-                        lastTransaction.getDouble("totalPrice"),
-                        lastTransaction.getDate("timestamp").toString());
-                JOptionPane.showMessageDialog(this, message);
-            } else {
-                JOptionPane.showMessageDialog(this, "No transactions found.");
-            }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error fetching last transaction: " + e.getMessage());
         }
     }
 
@@ -288,7 +250,6 @@ public class ProcessSales extends javax.swing.JFrame {
         }
     }
 
-
     private void clearFields() {
         txtBarcode.setText("");
         txtProductName.setText("");
@@ -307,7 +268,7 @@ public class ProcessSales extends javax.swing.JFrame {
         }
         MainFrame.setVisible(true); // Show the MainFrame
     }
-    
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             MainFrame mainFrame = new MainFrame(); // Create the MainFrame instance
@@ -318,7 +279,6 @@ public class ProcessSales extends javax.swing.JFrame {
 
     private javax.swing.JButton btnClear;
     private javax.swing.JButton btnExit;
-    private javax.swing.JButton btnLastTransaction1;  // Last Transaction button
     private javax.swing.JButton btnProcess;
     private javax.swing.JButton btnRefresh;
     private javax.swing.JLabel lblBarcode;

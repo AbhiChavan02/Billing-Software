@@ -10,12 +10,14 @@ import org.bson.Document;
 public class ProductRegistration extends javax.swing.JFrame {
 
     // Declare components
-    private JLabel lblBarcode, lblProductName, lblCategory, lblPricePerGram, lblStockQuantity;
-    private JTextField txtBarcode, txtProductName, txtPricePerGram, txtStockQuantity;
+    private JLabel lblBarcode, lblProductName, lblCategory, lblRatePerPiece, lblStockQuantity, lblProductImage;
+    private JTextField txtBarcode, txtProductName, txtRatePerPiece, txtStockQuantity;
     private JComboBox<String> cmbCategory;
-    private JButton btnRegister, btnClear, btnExit;
+    private JButton btnRegister, btnClear, btnExit, btnUploadImage;
     private JPanel panelInput, panelActions;
     private MainFrame MainFrame;  // Reference to the MainFrame class
+
+    private String productImagePath = "";  // To store the uploaded image path
 
     public ProductRegistration(MainFrame MainFrame) {
         this.MainFrame = MainFrame;  // Initialize the reference to the main frame
@@ -27,16 +29,22 @@ public class ProductRegistration extends javax.swing.JFrame {
         lblBarcode = new JLabel("Barcode:");
         lblProductName = new JLabel("Product Name:");
         lblCategory = new JLabel("Category:");
-        lblPricePerGram = new JLabel("Price per Gram:");
+        lblRatePerPiece = new JLabel("Rate per Piece:");
         lblStockQuantity = new JLabel("Stock Quantity:");
+        lblProductImage = new JLabel("Product Image:");
+
         txtBarcode = new JTextField();
         txtProductName = new JTextField();
-        txtPricePerGram = new JTextField();
+        txtRatePerPiece = new JTextField();
         txtStockQuantity = new JTextField();
+
         cmbCategory = new JComboBox<>(new String[]{"Gold", "Silver", "Platinum"});
+
         btnRegister = new JButton("Product Registration");
         btnClear = new JButton("Clear");
         btnExit = new JButton("Exit");
+        btnUploadImage = new JButton("Upload Image");
+
         panelInput = new JPanel();
         panelActions = new JPanel();
 
@@ -46,32 +54,35 @@ public class ProductRegistration extends javax.swing.JFrame {
         setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
 
         // Add components to input panel
-        panelInput.setLayout(new java.awt.GridLayout(5, 2, 10, 10));
+        panelInput.setLayout(new java.awt.GridLayout(6, 2, 10, 10));
         panelInput.add(lblBarcode);
         panelInput.add(txtBarcode);
         panelInput.add(lblProductName);
         panelInput.add(txtProductName);
         panelInput.add(lblCategory);
         panelInput.add(cmbCategory);
-        panelInput.add(lblPricePerGram);
-        panelInput.add(txtPricePerGram);
+        panelInput.add(lblRatePerPiece);
+        panelInput.add(txtRatePerPiece);
         panelInput.add(lblStockQuantity);
         panelInput.add(txtStockQuantity);
+        panelInput.add(lblProductImage);
+        panelInput.add(btnUploadImage);
         add(panelInput);
 
         // Add components to action panel
         panelActions.add(btnRegister);
         panelActions.add(btnClear);
-        panelActions.add(btnExit);  // Exit button added
+        panelActions.add(btnExit);
         add(panelActions);
 
         // Button actions
         btnRegister.addActionListener(evt -> registerProduct());
         btnClear.addActionListener(evt -> clearFields());
-        btnExit.addActionListener(evt -> exitApplication());  // Exit button action
+        btnExit.addActionListener(evt -> exitApplication());
+        btnUploadImage.addActionListener(evt -> uploadImage());
 
         pack();
-        setSize(1000, 1000);
+        setSize(500, 500);
         setLocationRelativeTo(null);
     }
 
@@ -80,7 +91,7 @@ public class ProductRegistration extends javax.swing.JFrame {
             String barcode = txtBarcode.getText();
             String productName = txtProductName.getText();
             String category = (String) cmbCategory.getSelectedItem();
-            double pricePerGram = Double.parseDouble(txtPricePerGram.getText());
+            double ratePerPiece = Double.parseDouble(txtRatePerPiece.getText());
             int stockQuantity = Integer.parseInt(txtStockQuantity.getText());
 
             if (barcode.isEmpty() || productName.isEmpty()) {
@@ -106,8 +117,9 @@ public class ProductRegistration extends javax.swing.JFrame {
             Document product = new Document("barcode", barcode)
                     .append("productName", productName)
                     .append("category", category)
-                    .append("pricePerGram", pricePerGram)
-                    .append("stockQuantity", stockQuantity);
+                    .append("ratePerPiece", ratePerPiece)
+                    .append("stockQuantity", stockQuantity)
+                    .append("productImagePath", productImagePath);
 
             // Insert into database
             productCollection.insertOne(product);
@@ -118,7 +130,7 @@ public class ProductRegistration extends javax.swing.JFrame {
             // Clear input fields
             clearFields();
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Invalid input for price or quantity.");
+            JOptionPane.showMessageDialog(this, "Invalid input for rate or quantity.");
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
         }
@@ -127,9 +139,10 @@ public class ProductRegistration extends javax.swing.JFrame {
     private void clearFields() {
         txtBarcode.setText("");
         txtProductName.setText("");
-        txtPricePerGram.setText("");
+        txtRatePerPiece.setText("");
         txtStockQuantity.setText("");
         cmbCategory.setSelectedIndex(0);
+        productImagePath = "";
     }
 
     private void exitApplication() {
@@ -138,6 +151,17 @@ public class ProductRegistration extends javax.swing.JFrame {
             this.setVisible(false);
             this.dispose();
             MainFrame.setVisible(true);  // Show the main frame when exiting
+        }
+    }
+
+    private void uploadImage() {
+        JFileChooser fileChooser = new JFileChooser();
+        int returnValue = fileChooser.showOpenDialog(this);
+        if (returnValue == JFileChooser.APPROVE_OPTION) {
+            productImagePath = fileChooser.getSelectedFile().getAbsolutePath();
+            JOptionPane.showMessageDialog(this, "Image selected: " + productImagePath);
+        } else {
+            JOptionPane.showMessageDialog(this, "Image selection canceled.");
         }
     }
 
