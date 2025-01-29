@@ -4,16 +4,14 @@
  */
 package m3.BillSoftware;
 
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
-
-import javax.swing.JOptionPane;
-
 import com.mongodb.MongoException;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -45,6 +43,7 @@ public class StaffLogin extends javax.swing.JFrame {
         txt_password = new javax.swing.JPasswordField();
         Login = new javax.swing.JButton();
         jLabel3 = new javax.swing.JLabel();
+        Admin = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setUndecorated(true);
@@ -126,28 +125,39 @@ public class StaffLogin extends javax.swing.JFrame {
                 .addGap(52, 52, 52))
         );
 
+        Admin.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        Admin.setText("Admin Page");
+        Admin.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                AdminMouseClicked(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(487, 487, 487)
-                        .addComponent(Name))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(380, 380, 380)
-                        .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(391, Short.MAX_VALUE))
+                .addGap(381, 381, 381)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(layout.createSequentialGroup()
+                .addGap(487, 487, 487)
+                .addComponent(Name)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 343, Short.MAX_VALUE)
+                .addComponent(Admin)
+                .addGap(53, 53, 53))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGap(50, 50, 50)
-                .addComponent(Name)
-                .addGap(67, 67, 67)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(Name)
+                    .addComponent(Admin))
+                .addGap(42, 42, 42)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(125, Short.MAX_VALUE))
+                .addContainerGap(150, Short.MAX_VALUE))
         );
 
         pack();
@@ -163,17 +173,17 @@ public class StaffLogin extends javax.swing.JFrame {
         char[] pass = txt_password.getPassword();
         String password = String.valueOf(pass);
         
-        String uri = "mongodb://localhost:27017/";
+        String uri = "mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/";
         MongoClient mongoClient = MongoClients.create(uri);
         MongoDatabase database = mongoClient.getDatabase("testDB");
         MongoCollection collection = database.getCollection("Staff");
         
-try {
+        try {
             
             if (collection.find(and(eq("username", username), eq("password", password))).first() != null) {
                 JOptionPane.showMessageDialog(this, "Login Successful");
                 this.dispose(); // Close login window
-                new MainFrame().setVisible(true); // Open main frame
+                new MainFrameStaff().setVisible(true); // Open main frame
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid Username or Password");
             }
@@ -183,13 +193,17 @@ try {
         } catch (MongoException e) {    
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
         }
-    } 
-    
+    }                                     
 
     private void jLabel3MouseClicked(java.awt.event.MouseEvent evt) {                                     
         this.dispose();
-        new Register().setVisible(true);
+        new StaffRegister().setVisible(true);
     }                                    
+
+    private void AdminMouseClicked(java.awt.event.MouseEvent evt) {                                   
+        this.dispose(); // Close login window
+        new Login().setVisible(true);
+    }                                  
 
     /**
      * @param args the command line arguments
@@ -227,6 +241,7 @@ try {
     }
 
     // Variables declaration - do not modify                     
+    private javax.swing.JLabel Admin;
     private javax.swing.JButton Login;
     private javax.swing.JLabel Name;
     private javax.swing.JLabel jLabel1;
