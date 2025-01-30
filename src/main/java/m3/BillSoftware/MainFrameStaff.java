@@ -36,7 +36,7 @@ public class MainFrameStaff extends javax.swing.JFrame {
         // Registered Product Button - open RegisteredProducts
         btnRegisteredProduct.addActionListener(e -> {
             dispose();  // Close MainFrame
-            new RegisteredProducts().setVisible(true);  // Open RegisteredProducts
+            new RegisteredProductsStaff().setVisible(true);  // Open RegisteredProducts
         });
 
 
