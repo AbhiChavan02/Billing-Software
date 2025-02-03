@@ -20,8 +20,8 @@ public class SalesHistory extends JFrame {
         setSize(800, 400);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        // Create table model
-        tableModel = new DefaultTableModel(new Object[]{"Product Name", "Quantity", "Weight", "Total Price", "Date"}, 0);
+        // Create table model with an additional column for Seller (staff)
+        tableModel = new DefaultTableModel(new Object[]{"Product Name", "Quantity", "Weight", "Total Price", "Seller", "Date"}, 0);
         salesTable = new JTable(tableModel);
 
         // Add table to scroll pane
@@ -58,9 +58,10 @@ public class SalesHistory extends JFrame {
                 double weight = sale.getDouble("weight");
                 double totalPrice = sale.getDouble("totalPrice");
                 String timestamp = sale.getDate("timestamp").toString();
+                String staff = sale.getString("staff");  // Get the staff name from the sale document
 
-                // Add row to the table
-                tableModel.addRow(new Object[]{productName, quantity, weight, totalPrice, timestamp});
+                // Add row to the table including staff information
+                tableModel.addRow(new Object[]{productName, quantity, weight, totalPrice, staff, timestamp});
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error fetching sales records: " + e.getMessage());

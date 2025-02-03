@@ -15,18 +15,15 @@ public class ProductRegistration extends javax.swing.JFrame {
     private JComboBox<String> cmbCategory;
     private JButton btnRegister, btnClear, btnExit, btnUploadImage;
     private JPanel panelInput, panelActions;
-    private MainFrameStaff MainFrame;  // Reference to the MainFrame class
+ // Reference to the MainFrame class
 
-    private String productImagePath = "";  // To store the uploaded image path
+    private String productImagePath = "";
+	private MainFrame MainFrame;  // To store the uploaded image path
 
-    public ProductRegistration(MainFrameStaff mainFrameStaff) {
-        this.MainFrame = mainFrameStaff;  // Initialize the reference to the main frame
+    public ProductRegistration(MainFrame mainFrame) {
+        this.MainFrame = mainFrame;  // Initialize the reference to the main frame
         initComponents();
     }
-
-    public ProductRegistration(m3.BillSoftware.MainFrame mainFrame2) {
-		// TODO Auto-generated constructor stub
-	}
 
 	private void initComponents() {
         // Initialize components
@@ -171,7 +168,7 @@ public class ProductRegistration extends javax.swing.JFrame {
 
     public static void main(String[] args) {
         // Create the main frame instance
-        MainFrameStaff MainFrame = new MainFrameStaff();
+        MainFrame MainFrame = new MainFrame();
 
         // Start the ProductRegistration window with a reference to the main frame
         java.awt.EventQueue.invokeLater(() -> {

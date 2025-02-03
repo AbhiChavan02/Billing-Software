@@ -5,173 +5,151 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
+
 import javax.swing.*;
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
-public class ProcessSalesStaff extends javax.swing.JFrame {
+public class ProcessSalesStaff extends JFrame {
+    private MainFrameStaff mainFrameStaff;
+    private JLabel lblStaff, lblBarcode, lblProductName, lblPricePerGram, lblStockQuantity, lblQuantity, lblWeight, lblTotalPrice;
+    private JComboBox<String> cmbStaff;
+    private JTextField txtBarcode, txtProductName, txtPricePerGram, txtStockQuantity, txtQuantity, txtWeight, txtTotalPrice;
+    private JButton btnProcess, btnClear, btnRefresh, btnExit;
 
-    private MainFrameStaff MainFrameStaff;  // Reference to the MainFrameStaff class
-
-    public ProcessSalesStaff(MainFrameStaff MainFrameStaff) {
-        this.MainFrameStaff = MainFrameStaff;
-        if (this.MainFrameStaff == null) {
-            System.out.println("DEBUG: MainFrameStaff passed to ProcessSales is null!");
-        } else {
-            System.out.println("DEBUG: MainFrameStaff passed to ProcessSales is not null.");
+    public ProcessSalesStaff(MainFrameStaff mainFrameStaff) {
+        this.mainFrameStaff = (mainFrameStaff == null) ? new MainFrameStaff() : mainFrameStaff;
+        
+        try {
+            UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        
         initComponents();
+        loadStaffDropdown();  // ✅ This will populate the dropdown when the UI starts
     }
 
-    @SuppressWarnings("unchecked")
+
     private void initComponents() {
-        lblBarcode = new javax.swing.JLabel();
-        txtBarcode = new javax.swing.JTextField();
-        lblProductName = new javax.swing.JLabel();
-        txtProductName = new javax.swing.JTextField();
-        lblPricePerGram = new javax.swing.JLabel();
-        txtPricePerGram = new javax.swing.JTextField();
-        lblStockQuantity = new javax.swing.JLabel();
-        txtStockQuantity = new javax.swing.JTextField();
-        lblQuantity = new javax.swing.JLabel();
-        txtQuantity = new javax.swing.JTextField();
-        lblWeight = new javax.swing.JLabel();
-        txtWeight = new javax.swing.JTextField();
-        lblTotalPrice = new javax.swing.JLabel();
-        txtTotalPrice = new javax.swing.JTextField();
-        btnProcess = new javax.swing.JButton();
-        btnClear = new javax.swing.JButton();
-        btnRefresh = new javax.swing.JButton();
-        btnExit = new javax.swing.JButton();  // Exit button added
+        setTitle("Process Sales - Staff");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(500, 400);
+        setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Process Sales");
-
-        lblBarcode.setText("Barcode:");
-        txtBarcode.setPreferredSize(new java.awt.Dimension(200, 30));
-
-        lblProductName.setText("Product Name:");
+        // Initialize components
+        lblBarcode = new JLabel("Barcode:");
+        txtBarcode = new JTextField(20);
+        lblProductName = new JLabel("Product Name:");
+        txtProductName = new JTextField(20);
         txtProductName.setEditable(false);
-
-        lblPricePerGram.setText("Price per Gram:");
+        lblPricePerGram = new JLabel("Price per Gram:");
+        txtPricePerGram = new JTextField(20);
         txtPricePerGram.setEditable(false);
-
-        lblStockQuantity.setText("Stock Quantity:");
+        lblStockQuantity = new JLabel("Stock Quantity:");
+        txtStockQuantity = new JTextField(20);
         txtStockQuantity.setEditable(false);
-
-        lblQuantity.setText("Quantity:");
-
-        lblWeight.setText("Weight (grams):");
-
-        lblTotalPrice.setText("Total Price:");
+        lblQuantity = new JLabel("Quantity:");
+        txtQuantity = new JTextField(20);
+        lblWeight = new JLabel("Weight (grams):");
+        txtWeight = new JTextField(20);
+        lblTotalPrice = new JLabel("Total Price:");
+        txtTotalPrice = new JTextField(20);
         txtTotalPrice.setEditable(false);
+        lblStaff = new JLabel("Staff:");
+        cmbStaff = new JComboBox<>();
 
-        btnProcess.setText("Process Sale");
+        btnProcess = new JButton("Process Sale");
         btnProcess.addActionListener(evt -> processSale());
-
-        btnClear.setText("Clear");
+        btnClear = new JButton("Clear");
         btnClear.addActionListener(evt -> clearFields());
-
-        // Refresh button - fetch product details based on barcode
-        btnRefresh.setText("Refresh");
-        btnRefresh.setPreferredSize(new java.awt.Dimension(80, 25));
+        btnRefresh = new JButton("Fetch Product");
         btnRefresh.addActionListener(evt -> fetchProductDetails());
-
-        // Exit button - close the current window and show the main frame
-        btnExit.setText("Exit");
+        btnExit = new JButton("Exit");
         btnExit.addActionListener(evt -> exitApplication());
 
-        // Layout setup
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(layout.createSequentialGroup()
-                    .addContainerGap()
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(lblBarcode)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(txtBarcode)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(btnRefresh))
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(lblProductName)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(txtProductName))
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(lblPricePerGram)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(txtPricePerGram))
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(lblStockQuantity)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(txtStockQuantity))
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(lblQuantity)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(txtQuantity))
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(lblWeight)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(txtWeight))
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(lblTotalPrice)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(txtTotalPrice)))
-                    .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addGroup(layout.createSequentialGroup()
-                    .addGap(52, 52, 52)
-                    .addComponent(btnProcess)
-                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 60, Short.MAX_VALUE)
-                    .addComponent(btnClear)
-                    .addGap(52, 52, 52))
-                .addGroup(layout.createSequentialGroup()
-                    .addGap(200, 200, 200)
-                    .addComponent(btnExit)
-                    .addGap(200, 200, 200))
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(layout.createSequentialGroup()
-                    .addContainerGap()
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(lblBarcode)
-                        .addComponent(txtBarcode, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(btnRefresh))
-                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(lblProductName)
-                        .addComponent(txtProductName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(lblPricePerGram)
-                        .addComponent(txtPricePerGram, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(lblStockQuantity)
-                        .addComponent(txtStockQuantity, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(lblQuantity)
-                        .addComponent(txtQuantity, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(lblWeight)
-                        .addComponent(txtWeight, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(lblTotalPrice)
-                        .addComponent(txtTotalPrice, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(btnProcess)
-                        .addComponent(btnClear))
-                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                    .addComponent(btnExit)
-                    .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
+        // Arrange components using GridBagLayout
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        add(lblBarcode, gbc);
+        gbc.gridx = 1;
+        add(txtBarcode, gbc);
+        gbc.gridx = 2;
+        add(btnRefresh, gbc);
 
-        pack();
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        add(lblProductName, gbc);
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        add(txtProductName, gbc);
+        gbc.gridwidth = 1;
+
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        add(lblPricePerGram, gbc);
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        add(txtPricePerGram, gbc);
+        gbc.gridwidth = 1;
+
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        add(lblStockQuantity, gbc);
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        add(txtStockQuantity, gbc);
+        gbc.gridwidth = 1;
+
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        add(lblQuantity, gbc);
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        add(txtQuantity, gbc);
+        gbc.gridwidth = 1;
+
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        add(lblWeight, gbc);
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        add(txtWeight, gbc);
+        gbc.gridwidth = 1;
+
+        gbc.gridx = 0;
+        gbc.gridy = 6;
+        add(lblTotalPrice, gbc);
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        add(txtTotalPrice, gbc);
+        gbc.gridwidth = 1;
+
+        gbc.gridx = 0;
+        gbc.gridy = 7;
+        add(lblStaff, gbc);
+        gbc.gridx = 1;
+        gbc.gridwidth = 2;
+        add(cmbStaff, gbc);
+        gbc.gridwidth = 1;
+
+        // Button Panel
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(btnProcess);
+        buttonPanel.add(btnClear);
+        buttonPanel.add(btnExit);
+
+        gbc.gridx = 0;
+        gbc.gridy = 8;
+        gbc.gridwidth = 3;
+        add(buttonPanel, gbc);
+
         setLocationRelativeTo(null);
+        pack();
     }
 
     private void fetchProductDetails() {
@@ -200,13 +178,21 @@ public class ProcessSalesStaff extends javax.swing.JFrame {
 
     private void processSale() {
         try {
+            // Ensure that staff is selected and barcode is entered
+            String staff = (String) cmbStaff.getSelectedItem();
+            if (staff == null || txtBarcode.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill all fields.");
+                return;
+            }
+
+            // Parse input values
             double pricePerGram = Double.parseDouble(txtPricePerGram.getText());
             int quantity = Integer.parseInt(txtQuantity.getText());
             double weight = Double.parseDouble(txtWeight.getText());
             double totalPrice = pricePerGram * weight * quantity; // Adjusted formula
             txtTotalPrice.setText(String.valueOf(totalPrice));
 
-            // Save sale to MongoDB and update stock quantity
+            // MongoDB operations for saving sale and updating stock
             try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
                 MongoDatabase database = mongoClient.getDatabase("testDB");
                 MongoCollection<Document> salesCollection = database.getCollection("Sales");
@@ -230,12 +216,14 @@ public class ProcessSalesStaff extends javax.swing.JFrame {
                     productCollection.updateOne(new Document("barcode", barcode),
                             new Document("$set", new Document("stockQuantity", newStock)));
 
-                    // Save sale to sales collection
+                    // Save sale to sales collection, including staff info and timestamp
                     Document sale = new Document("productName", txtProductName.getText())
                             .append("quantity", quantity)
                             .append("weight", weight)
                             .append("totalPrice", totalPrice)
-                            .append("timestamp", new java.util.Date());
+                            .append("staff", staff) // Added staff info
+                            .append("timestamp", new java.util.Date()); // Timestamp
+
                     salesCollection.insertOne(sale);
 
                     JOptionPane.showMessageDialog(this, "Sale processed successfully!");
@@ -250,6 +238,7 @@ public class ProcessSalesStaff extends javax.swing.JFrame {
         }
     }
 
+
     private void clearFields() {
         txtBarcode.setText("");
         txtProductName.setText("");
@@ -258,41 +247,59 @@ public class ProcessSalesStaff extends javax.swing.JFrame {
         txtQuantity.setText("");
         txtWeight.setText("");
         txtTotalPrice.setText("");
+        cmbStaff.setSelectedIndex(-1);
     }
 
     private void exitApplication() {
         this.dispose(); // Close the current window
-        if (MainFrameStaff == null) {
-            System.out.println("MainFrameStaff is NULL, creating a new instance...");
-            MainFrameStaff = new MainFrameStaff(); // Create a new MainFrameStaff instance
+        if (mainFrameStaff == null) {
+            System.out.println("MainFrame is NULL, creating a new instance...");
+            mainFrameStaff = new MainFrameStaff(); // Create a new MainFrame instance
         }
-        MainFrameStaff.setVisible(true); // Show the MainFrameStaff
+        mainFrameStaff.setVisible(true); // Show the MainFrame
     }
+
+    private void loadStaffDropdown() {
+        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
+            System.out.println("✅ Connected to MongoDB successfully!");
+
+            MongoDatabase database = mongoClient.getDatabase("testDB");
+            System.out.println("Using database: " + database.getName());
+
+            MongoCollection<Document> staffCollection = database.getCollection("Staff");
+            System.out.println("Using collection: " + staffCollection.getNamespace());
+
+            List<String> staffNames = new ArrayList<>();
+            for (Document doc : staffCollection.find()) {
+                System.out.println("📜 Found document: " + doc.toJson()); // Debugging line
+                String firstName = doc.getString("firstname"); // Fetch "firstname" instead of "staffName"
+                if (firstName != null && !firstName.isEmpty()) {
+                    staffNames.add(firstName);
+                }
+            }
+
+            if (!staffNames.isEmpty()) {
+                cmbStaff.setModel(new DefaultComboBoxModel<>(staffNames.toArray(new String[0])));
+                System.out.println("✅ Staff loaded successfully: " + staffNames);
+            } else {
+                System.out.println("⚠️ No staff found in the database.");
+                JOptionPane.showMessageDialog(this, "No staff found in the database.");
+            }
+        } catch (Exception e) {
+            System.out.println("❌ Error connecting to MongoDB: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, "Error loading staff: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            MainFrameStaff MainFrameStaff = new MainFrameStaff(); // Create the MainFrameStaff instance
-            ProcessSalesStaff processSales = new ProcessSalesStaff(MainFrameStaff); // Pass MainFrameStaff to ProcessSales
+            MainFrameStaff mainFrame = new MainFrameStaff(); // Create the MainFrame instance
+            ProcessSalesStaff processSales = new ProcessSalesStaff(mainFrame); // Pass MainFrame to ProcessSales
             processSales.setVisible(true); // Show the ProcessSales window
         });
     }
-
-    private javax.swing.JButton btnClear;
-    private javax.swing.JButton btnExit;
-    private javax.swing.JButton btnProcess;
-    private javax.swing.JButton btnRefresh;
-    private javax.swing.JLabel lblBarcode;
-    private javax.swing.JLabel lblPricePerGram;
-    private javax.swing.JLabel lblProductName;
-    private javax.swing.JLabel lblQuantity;
-    private javax.swing.JLabel lblStockQuantity;
-    private javax.swing.JLabel lblTotalPrice;
-    private javax.swing.JLabel lblWeight;
-    private javax.swing.JTextField txtBarcode;
-    private javax.swing.JTextField txtPricePerGram;
-    private javax.swing.JTextField txtProductName;
-    private javax.swing.JTextField txtQuantity;
-    private javax.swing.JTextField txtStockQuantity;
-    private javax.swing.JTextField txtTotalPrice;
-    private javax.swing.JTextField txtWeight;
 }
