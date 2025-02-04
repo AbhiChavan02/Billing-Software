@@ -40,24 +40,28 @@ public class StaffLoginRegister extends JFrame {
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Form Panel
+        // Form Panel with Fixed Size
         formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(Color.WHITE);
         formPanel.setBorder(BorderFactory.createLineBorder(new Color(40, 58, 82), 2));
-        formPanel.setPreferredSize(new Dimension(400, 400));
+        formPanel.setPreferredSize(new Dimension(400, 500)); // Increase height slightly
 
         GridBagConstraints gbcMain = new GridBagConstraints();
         gbcMain.anchor = GridBagConstraints.CENTER;
-        gbcMain.weightx = gbcMain.weighty = 1;
+        gbcMain.gridx = 0;
+        gbcMain.gridy = 0;
+        gbcMain.weightx = 0;
+        gbcMain.weighty = 0;
         mainPanel.add(formPanel, gbcMain);
 
         // Header
-        headerLabel = new JLabel("Staff Login");
+        headerLabel = new JLabel("Staff Login", SwingConstants.CENTER);
         headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         headerLabel.setForeground(new Color(40, 58, 82));
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
         formPanel.add(headerLabel, gbc);
 
         // Username
@@ -73,7 +77,7 @@ public class StaffLoginRegister extends JFrame {
         gbc.gridx = 0;
         formPanel.add(createLabel("Password:"), gbc);
         gbc.gridx = 1;
-        txtPassword = new JPasswordField();
+        txtPassword = new JPasswordField(15);
         txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         txtPassword.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(200, 200, 200)),
@@ -98,16 +102,19 @@ public class StaffLoginRegister extends JFrame {
         txtLastName = createTextField();
         formPanel.add(txtLastName, gbc);
 
-        // Buttons
+        // Buttons Panel (Fix Layout Issues)
         gbc.gridy = 5;
         gbc.gridx = 0;
         gbc.gridwidth = 2;
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5)); // Small spacing
         btnLogin = createButton("Login", new Color(46, 204, 113));
         btnRegister = createButton("Register", new Color(52, 152, 219));
         btnToggle = createButton("Switch to Register", new Color(241, 196, 15));
         btnAdmin = createButton("Admin Login", new Color(155, 89, 182));
-        
+
         buttonPanel.add(btnLogin);
         buttonPanel.add(btnToggle);
         buttonPanel.add(btnAdmin);
@@ -119,7 +126,7 @@ public class StaffLoginRegister extends JFrame {
         btnToggle.addActionListener(e -> toggleMode());
         btnAdmin.addActionListener(e -> {
             dispose();
-            new AdminLoginRegister().setVisible(true); // Assume AdminLogin class exists
+            new AdminLoginRegister().setVisible(true); 
         });
     }
 
@@ -151,7 +158,7 @@ public class StaffLoginRegister extends JFrame {
             if (user != null) {
                 JOptionPane.showMessageDialog(this, "Login Successful");
                 dispose();
-                new StaffDashboard().setVisible(true);
+                new StaffDashboard(username).setVisible(true);
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid Username or Password");
             }

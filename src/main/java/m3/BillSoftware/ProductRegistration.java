@@ -11,33 +11,69 @@ import org.bson.Document;
 public class ProductRegistration extends JFrame {
     private JPanel menuPanel, contentPanel;
     private JSplitPane splitPane;
-    private Color primaryColor = new Color(40, 58, 82); // Dark blue
-    private Color secondaryColor = new Color(241, 242, 246); // Light gray
+    private Color primaryColor = new Color(40, 58, 82);
+    private Color secondaryColor = new Color(241, 242, 246);
+    private String loggedInUsername;
+    private String loggedInFirstName;
+    private String loggedInLastName;
 
-    public ProductRegistration() {
-        setTitle("Jewelry POS System");
+    public ProductRegistration(String username, String firstName, String lastName) {
+        this.loggedInUsername = username;
+        this.loggedInFirstName = firstName;
+        this.loggedInLastName = lastName;
+        
+        setTitle("Jewelry POS System - Logged in as: " + loggedInUsername);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
         // Create Menu Panel (Left Side)
-        menuPanel = new JPanel();
-        menuPanel.setLayout(new GridLayout(5, 1, 15, 15));
-        menuPanel.setPreferredSize(new Dimension(280, getHeight()));
+        menuPanel = new JPanel(new GridBagLayout());
         menuPanel.setBackground(primaryColor);
-        menuPanel.setBorder(BorderFactory.createEmptyBorder(30, 20, 30, 20));
+        menuPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 0, 10, 0);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0;
 
+        // Add User Info Section
+        JPanel userInfoPanel = new JPanel();
+        userInfoPanel.setLayout(new BoxLayout(userInfoPanel, BoxLayout.Y_AXIS));
+        userInfoPanel.setBackground(primaryColor);
+        userInfoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel lblUserName = new JLabel(loggedInFirstName + " " + loggedInLastName);
+        lblUserName.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblUserName.setForeground(Color.WHITE);
+        
+        JLabel lblUserRole = new JLabel("(" + loggedInUsername + ")");
+        lblUserRole.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblUserRole.setForeground(new Color(200, 200, 200));
+
+        userInfoPanel.add(lblUserName);
+        userInfoPanel.add(lblUserRole);
+        userInfoPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+        gbc.gridy = 0;
+        menuPanel.add(userInfoPanel, gbc);
+
+        // Menu Buttons
         JButton btnRegisterProduct = createMenuButton("Product Registration");
         JButton btnProcessSales = createMenuButton("Process Sales");
         JButton btnRegisteredProduct = createMenuButton("Registered Products");
         JButton btnSalesHistory = createMenuButton("Sales History");
         JButton btnLogout = createMenuButton("Logout");
 
-        menuPanel.add(btnRegisterProduct);
-        menuPanel.add(btnProcessSales);
-        menuPanel.add(btnRegisteredProduct);
-        menuPanel.add(btnSalesHistory);
-        menuPanel.add(btnLogout);
+        gbc.gridy = 1;
+        menuPanel.add(btnRegisterProduct, gbc);
+        gbc.gridy = 2;
+        menuPanel.add(btnProcessSales, gbc);
+        gbc.gridy = 3;
+        menuPanel.add(btnRegisteredProduct, gbc);
+        gbc.gridy = 4;
+        menuPanel.add(btnSalesHistory, gbc);
+        gbc.gridy = 5;
+        menuPanel.add(btnLogout, gbc);
 
         // Create Content Panel (Right Side)
         contentPanel = new JPanel(new BorderLayout());
@@ -61,68 +97,95 @@ public class ProductRegistration extends JFrame {
         });
     }
 
-
-    private void openProcessSales() {
-        contentPanel.removeAll();
-        contentPanel.add(new ProcessSalesPanel(), BorderLayout.CENTER);
-        contentPanel.revalidate();
-        contentPanel.repaint();
-    }
-
-
-	private JButton createMenuButton(String text) {
+    private JButton createMenuButton(String text) {
         JButton btn = new JButton(text);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 16));
         btn.setForeground(Color.WHITE);
-        btn.setBackground(new Color(52, 73, 102)); // Slightly lighter blue
+        btn.setBackground(new Color(52, 73, 102));
         btn.setFocusPainted(false);
         btn.setBorder(BorderFactory.createEmptyBorder(15, 25, 15, 25));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         btn.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
-                btn.setBackground(new Color(67, 91, 124)); // Hover effect
+                btn.setBackground(new Color(67, 91, 124));
             }
-
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                btn.setBackground(new Color(52, 73, 102)); // Reset color
+                btn.setBackground(new Color(52, 73, 102));
             }
         });
-
         return btn;
     }
 
     private void openProductRegistration() {
         contentPanel.removeAll();
-        contentPanel.add(new ProductRegistrationPanel("LoggedUser123"), BorderLayout.CENTER); // Pass logged-in username
+        
+        // Use GridBagLayout for centering
+        contentPanel.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.CENTER; // Center alignment
+
+        ProductRegistrationPanel registrationPanel = new ProductRegistrationPanel(loggedInUsername, loggedInFirstName, loggedInLastName);
+        contentPanel.add(registrationPanel, gbc);
+
         contentPanel.revalidate();
         contentPanel.repaint();
     }
-    
+
+
+    private void openProcessSales() {
+        contentPanel.removeAll();
+        
+        // Use GridBagLayout to center the ProcessSalesPanel
+        contentPanel.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.CENTER; // Center alignment
+        gbc.fill = GridBagConstraints.BOTH; // Allow resizing
+
+        ProcessSalesPanel processSalesPanel = new ProcessSalesPanel();
+        contentPanel.add(processSalesPanel, gbc);
+
+        contentPanel.revalidate();
+        contentPanel.repaint();
+    }
+
+
     private void openRegisteredProducts() {
         contentPanel.removeAll();
-        contentPanel.add(new RegisteredProductsPanel(), BorderLayout.CENTER);
+        
+        // Use BorderLayout to make the panel take up the entire contentPanel
+        contentPanel.setLayout(new BorderLayout());
+        
+        RegisteredProductsPanel registeredProductsPanel = new RegisteredProductsPanel();
+        contentPanel.add(registeredProductsPanel, BorderLayout.CENTER);
+
         contentPanel.revalidate();
         contentPanel.repaint();
     }
 
-    private void showMessage(String message) {
-        contentPanel.removeAll();
-        contentPanel.add(new JLabel("<html><h1>" + message + "</h1></html>", SwingConstants.CENTER), BorderLayout.CENTER);
-        contentPanel.revalidate();
-        contentPanel.repaint();
-    }
-    
     private void openSalesHistory() {
         contentPanel.removeAll();
-        contentPanel.add(new SalesHistoryPanel(), BorderLayout.CENTER);
+        
+        // Use BorderLayout to make the panel take up the entire contentPanel
+        contentPanel.setLayout(new BorderLayout());
+        
+        SalesHistoryPanel salesHistoryPanel = new SalesHistoryPanel();
+        contentPanel.add(salesHistoryPanel, BorderLayout.CENTER);
+
         contentPanel.revalidate();
         contentPanel.repaint();
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new ProductRegistration().setVisible(true));
-    }
+
+
+
+//    public static void main(String[] args) {
+//        SwingUtilities.invokeLater(() -> new ProductRegistration(loggedInFirstName, loggedInFirstName, loggedInFirstName).setVisible(true));
+//    }
 }
 
 class ProductRegistrationPanel extends JPanel {
@@ -133,10 +196,11 @@ class ProductRegistrationPanel extends JPanel {
     private Color backgroundColor = new Color(241, 242, 246); // Light gray
     private Color formColor = Color.WHITE; // White
 
-    public ProductRegistrationPanel(String loggedInUsername) {
-        this.loggedInUsername = loggedInUsername;
-        setLayout(new GridBagLayout());
-        setBackground(backgroundColor);
+    public ProductRegistrationPanel(String username, String firstName, String lastName) {
+        // Update logged in user display
+        JLabel lblLoggedInUser = new JLabel("Logged in as: " + firstName + " " + lastName + " (" + username + ")");
+        lblLoggedInUser.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        lblLoggedInUser.setForeground(new Color(100, 100, 100));
 
         // Form Panel
         JPanel formPanel = new JPanel(new GridBagLayout());
@@ -157,9 +221,9 @@ class ProductRegistrationPanel extends JPanel {
         headerLabel.setForeground(new Color(40, 58, 82)); // Dark blue
 
         // User info
-        JLabel lblLoggedInUser = new JLabel("Logged in as: " + loggedInUsername);
-        lblLoggedInUser.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblLoggedInUser.setForeground(new Color(100, 100, 100)); // Gray
+//        JLabel lblLoggedInUser1 = new JLabel("Logged in as: " + loggedInUsername);
+//        lblLoggedInUser1.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+//        lblLoggedInUser1.setForeground(new Color(100, 100, 100)); // Gray
 
         // Form components
         JLabel lblBarcode = createFormLabel("Barcode:");
@@ -192,8 +256,8 @@ class ProductRegistrationPanel extends JPanel {
         gbc.gridy = 0;
         formPanel.add(headerLabel, gbc);
 
-        gbc.gridy = 1;
-        formPanel.add(lblLoggedInUser, gbc);
+//        gbc.gridy = 1;
+//        formPanel.add(lblLoggedInUser1, gbc);
 
         gbc.gridwidth = 1;
         gbc.gridy = 2;

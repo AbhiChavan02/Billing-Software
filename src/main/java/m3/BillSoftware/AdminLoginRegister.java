@@ -151,7 +151,14 @@ public class AdminLoginRegister extends JFrame {
             if (user != null) {
                 JOptionPane.showMessageDialog(this, "Login Successful");
                 dispose();
-                new ProductRegistration().setVisible(true);
+                
+                // Get user details from database
+                String loggedInUsername = user.getString("username");
+                String loggedInFirstName = user.getString("firstname");
+                String loggedInLastName = user.getString("lastname");
+                
+                // Open ProductRegistration with user details
+                new ProductRegistration(loggedInUsername, loggedInFirstName, loggedInLastName).setVisible(true);
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid Username or Password");
             }
@@ -159,6 +166,7 @@ public class AdminLoginRegister extends JFrame {
             JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
         }
     }
+
 
     private void handleRegister() {
         String firstName = txtFirstName.getText();

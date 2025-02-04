@@ -5,11 +5,12 @@ import java.awt.*;
 
 public class StaffDashboard extends JFrame {
     private JPanel menuPanel, contentPanel;
+    private JLabel lblUser;
     private JSplitPane splitPane;
     private Color primaryColor = new Color(40, 58, 82);
     private Color secondaryColor = new Color(241, 242, 246);
 
-    public StaffDashboard() {
+    public StaffDashboard(String username) { // Accept username
         setTitle("Jewelry POS System - Staff Dashboard");
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -17,7 +18,7 @@ public class StaffDashboard extends JFrame {
 
         // Create Menu Panel (Left Side)
         menuPanel = new JPanel();
-        menuPanel.setLayout(new GridLayout(3, 1, 15, 15));
+        menuPanel.setLayout(new GridLayout(4, 1, 15, 15)); // Increased to 4 rows
         menuPanel.setPreferredSize(new Dimension(280, getHeight()));
         menuPanel.setBackground(primaryColor);
         menuPanel.setBorder(BorderFactory.createEmptyBorder(30, 20, 30, 20));
@@ -26,6 +27,11 @@ public class StaffDashboard extends JFrame {
         JButton btnRegisteredProducts = createMenuButton("Registered Products");
         JButton btnLogout = createMenuButton("Logout");
 
+        // Display Logged-in User
+        lblUser = new JLabel("Logged in: " + username, SwingConstants.CENTER);
+        lblUser.setForeground(Color.WHITE);
+        lblUser.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        menuPanel.add(lblUser); // Add username label at the top
         menuPanel.add(btnProcessSales);
         menuPanel.add(btnRegisteredProducts);
         menuPanel.add(btnLogout);
@@ -85,6 +91,6 @@ public class StaffDashboard extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new StaffDashboard().setVisible(true));
+        SwingUtilities.invokeLater(() -> new StaffDashboard("Guest").setVisible(true));
     }
 }
