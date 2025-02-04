@@ -10,7 +10,7 @@ import javax.swing.*;
 import java.awt.*;
 
 public class ProcessSalesPanel extends JPanel {
-    private JTextField txtBarcode, txtProductName, txtPricePerGram, txtQuantity, txtWeight, txtTotalPrice, txtStockQuantity, txtName;
+    private JTextField txtBarcode, txtProductName, txtPricePerGram, txtQuantity, txtTotalPrice, txtStockQuantity, txtName;
     private JButton btnProcessSale, btnClear, btnRefresh;
     private Color backgroundColor = new Color(241, 242, 246); // Light gray background
     private Color formColor = Color.WHITE; // White for form background
@@ -49,7 +49,6 @@ public class ProcessSalesPanel extends JPanel {
         txtStockQuantity = createFormTextField(20);
         txtStockQuantity.setEditable(false);
         txtQuantity = createFormTextField(20);
-        txtWeight = createFormTextField(20);
         txtTotalPrice = createFormTextField(20);
         txtTotalPrice.setEditable(false);
 
@@ -105,23 +104,16 @@ public class ProcessSalesPanel extends JPanel {
         gbc.gridx = 1;
         formPanel.add(txtQuantity, gbc);
 
-        // Weight Field and Label
-        gbc.gridx = 0;
-        gbc.gridy = 7;
-        formPanel.add(createFormLabel("Weight (grams):"), gbc);
-        gbc.gridx = 1;
-        formPanel.add(txtWeight, gbc);
-
         // Total Price Field and Label
         gbc.gridx = 0;
-        gbc.gridy = 8;
+        gbc.gridy = 7;
         formPanel.add(createFormLabel("Total Price:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtTotalPrice, gbc);
 
         // Button Panel for Process Sale, Clear
         gbc.gridx = 0;
-        gbc.gridy = 9;
+        gbc.gridy = 8;
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
@@ -231,8 +223,7 @@ public class ProcessSalesPanel extends JPanel {
         try {
             double pricePerGram = Double.parseDouble(txtPricePerGram.getText());
             int quantity = Integer.parseInt(txtQuantity.getText());
-            double weight = Double.parseDouble(txtWeight.getText());
-            double totalPrice = pricePerGram * weight * quantity;
+            double totalPrice = pricePerGram * quantity;
             txtTotalPrice.setText(String.valueOf(totalPrice));
 
             try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
@@ -255,7 +246,6 @@ public class ProcessSalesPanel extends JPanel {
 
                     Document sale = new Document("productName", txtProductName.getText())
                             .append("quantity", quantity)
-                            .append("weight", weight)
                             .append("totalPrice", totalPrice)
                             .append("customerName", txtName.getText())
                             .append("timestamp", new java.util.Date());
@@ -278,7 +268,6 @@ public class ProcessSalesPanel extends JPanel {
         txtPricePerGram.setText("");
         txtStockQuantity.setText("");
         txtQuantity.setText("");
-        txtWeight.setText("");
         txtTotalPrice.setText("");
         txtName.setText("");
     }

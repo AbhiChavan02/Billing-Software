@@ -98,7 +98,7 @@ public class AdminLoginRegister extends JFrame {
         txtLastName = createTextField();
         formPanel.add(txtLastName, gbc);
 
-        // Buttons
+     // Buttons
         gbc.gridy = 5;
         gbc.gridx = 0;
         gbc.gridwidth = 2;
@@ -108,9 +108,12 @@ public class AdminLoginRegister extends JFrame {
         btnToggle = createButton("Switch to Register", new Color(241, 196, 15));
         btnAdmin = createButton("Staff Login", new Color(155, 89, 182));
         
+     // Add both btnLogin and btnRegister to the button panel
         buttonPanel.add(btnLogin);
+        buttonPanel.add(btnRegister);
         buttonPanel.add(btnToggle);
         buttonPanel.add(btnAdmin);
+
         formPanel.add(buttonPanel, gbc);
 
         // Action Listeners

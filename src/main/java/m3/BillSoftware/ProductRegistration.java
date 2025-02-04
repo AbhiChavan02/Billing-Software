@@ -2,6 +2,7 @@ package m3.BillSoftware;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
@@ -36,12 +37,18 @@ public class ProductRegistration extends JFrame {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.gridx = 0;
 
-        // Add User Info Section
+        // Load company logo with proper scaling
+        JLabel lblCompanyLogo = loadLogo("E:\\PWS\\PWS\\img\\PWS - Logo .png", 200, 100);
+        
         JPanel userInfoPanel = new JPanel();
         userInfoPanel.setLayout(new BoxLayout(userInfoPanel, BoxLayout.Y_AXIS));
         userInfoPanel.setBackground(primaryColor);
         userInfoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
+        
+        if (lblCompanyLogo != null) {
+            userInfoPanel.add(lblCompanyLogo);
+        }
+        
         JLabel lblUserName = new JLabel(loggedInFirstName + " " + loggedInLastName);
         lblUserName.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblUserName.setForeground(Color.WHITE);
@@ -64,16 +71,11 @@ public class ProductRegistration extends JFrame {
         JButton btnSalesHistory = createMenuButton("Sales History");
         JButton btnLogout = createMenuButton("Logout");
 
-        gbc.gridy = 1;
-        menuPanel.add(btnRegisterProduct, gbc);
-        gbc.gridy = 2;
-        menuPanel.add(btnProcessSales, gbc);
-        gbc.gridy = 3;
-        menuPanel.add(btnRegisteredProduct, gbc);
-        gbc.gridy = 4;
-        menuPanel.add(btnSalesHistory, gbc);
-        gbc.gridy = 5;
-        menuPanel.add(btnLogout, gbc);
+        gbc.gridy = 1; menuPanel.add(btnRegisterProduct, gbc);
+        gbc.gridy = 2; menuPanel.add(btnProcessSales, gbc);
+        gbc.gridy = 3; menuPanel.add(btnRegisteredProduct, gbc);
+        gbc.gridy = 4; menuPanel.add(btnSalesHistory, gbc);
+        gbc.gridy = 5; menuPanel.add(btnLogout, gbc);
 
         // Create Content Panel (Right Side)
         contentPanel = new JPanel(new BorderLayout());
@@ -86,15 +88,28 @@ public class ProductRegistration extends JFrame {
         splitPane.setDividerSize(3);
         add(splitPane, BorderLayout.CENTER);
 
-        // Button Actions
+     // Button Actions
         btnRegisterProduct.addActionListener(e -> openProductRegistration());
-        btnProcessSales.addActionListener(e -> openProcessSales());
-        btnRegisteredProduct.addActionListener(e -> openRegisteredProducts());
-        btnSalesHistory.addActionListener(e -> openSalesHistory());
+        btnProcessSales.addActionListener(e -> openProcessSales());   // Missing Action Listener
+        btnRegisteredProduct.addActionListener(e -> openRegisteredProducts()); // Missing Action Listener
+        btnSalesHistory.addActionListener(e -> openSalesHistory());   // Missing Action Listener
         btnLogout.addActionListener(e -> {
             dispose();
             new AdminLoginRegister().setVisible(true);
         });
+
+    }
+
+    private JLabel loadLogo(String path, int width, int height) {
+        File file = new File(path);
+        if (!file.exists()) {
+            System.out.println("Error: Image not found at " + path);
+            return null;
+        }
+
+        ImageIcon originalIcon = new ImageIcon(path);
+        Image scaledImage = originalIcon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
+        return new JLabel(new ImageIcon(scaledImage));
     }
 
     private JButton createMenuButton(String text) {
@@ -119,13 +134,11 @@ public class ProductRegistration extends JFrame {
 
     private void openProductRegistration() {
         contentPanel.removeAll();
-        
-        // Use GridBagLayout for centering
         contentPanel.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.CENTER; // Center alignment
+        gbc.anchor = GridBagConstraints.CENTER;
 
         ProductRegistrationPanel registrationPanel = new ProductRegistrationPanel(loggedInUsername, loggedInFirstName, loggedInLastName);
         contentPanel.add(registrationPanel, gbc);

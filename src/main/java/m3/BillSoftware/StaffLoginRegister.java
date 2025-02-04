@@ -102,22 +102,22 @@ public class StaffLoginRegister extends JFrame {
         txtLastName = createTextField();
         formPanel.add(txtLastName, gbc);
 
-        // Buttons Panel (Fix Layout Issues)
+     // Buttons
         gbc.gridy = 5;
         gbc.gridx = 0;
         gbc.gridwidth = 2;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5)); // Small spacing
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         btnLogin = createButton("Login", new Color(46, 204, 113));
         btnRegister = createButton("Register", new Color(52, 152, 219));
         btnToggle = createButton("Switch to Register", new Color(241, 196, 15));
-        btnAdmin = createButton("Admin Login", new Color(155, 89, 182));
+        btnAdmin = createButton("Staff Login", new Color(155, 89, 182));
 
+     // Add both btnLogin and btnRegister to the button panel
         buttonPanel.add(btnLogin);
+        buttonPanel.add(btnRegister);
         buttonPanel.add(btnToggle);
         buttonPanel.add(btnAdmin);
+
         formPanel.add(buttonPanel, gbc);
 
         // Action Listeners
