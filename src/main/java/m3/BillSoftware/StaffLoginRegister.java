@@ -110,7 +110,7 @@ public class StaffLoginRegister extends JFrame {
         btnLogin = createButton("Login", new Color(46, 204, 113));
         btnRegister = createButton("Register", new Color(52, 152, 219));
         btnToggle = createButton("Switch to Register", new Color(241, 196, 15));
-        btnAdmin = createButton("Staff Login", new Color(155, 89, 182));
+        btnAdmin = createButton("Admin Login", new Color(155, 89, 182));
 
      // Add both btnLogin and btnRegister to the button panel
         buttonPanel.add(btnLogin);
