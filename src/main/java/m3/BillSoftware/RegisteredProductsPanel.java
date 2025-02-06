@@ -4,13 +4,19 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.result.DeleteResult;
+
 import org.bson.Document;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.Objects;
 
 public class RegisteredProductsPanel extends JPanel {
@@ -53,45 +59,91 @@ public class RegisteredProductsPanel extends JPanel {
         }
     }
     
- // Move the ButtonCellRenderer class outside the method
+    private class ButtonCellRenderer extends JPanel implements TableCellRenderer {
+        private JButton updateButton;
+        private JButton deleteButton;
 
-    private class ButtonCellRenderer implements TableCellRenderer {
+        public ButtonCellRenderer() {
+            setLayout(new GridBagLayout()); // Use GridBagLayout for centering
+            setOpaque(true);
+
+            updateButton = new JButton("Update");
+            deleteButton = new JButton("Delete");
+
+            updateButton.setBackground(new Color(52, 152, 219));
+            deleteButton.setBackground(new Color(231, 76, 60));
+            updateButton.setForeground(Color.WHITE);
+            deleteButton.setForeground(Color.WHITE);
+
+            // Add buttons to the panel with constraints for centering
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.insets = new Insets(2, 5, 2, 5); // Add spacing between buttons
+            add(updateButton, gbc);
+
+            gbc.gridx = 1;
+            add(deleteButton, gbc);
+        }
+
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            JPanel panel = new JPanel(new GridBagLayout()); // Use GridBagLayout to center content
-            panel.setBackground(Color.WHITE); // Set the background color of the panel
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            return this;
+        }
+    }
 
-            GridBagConstraints constraints = new GridBagConstraints();
-            constraints.gridx = 0; // Put the buttons in the first column of the layout
-            constraints.gridy = 0; // Align to the top row of the layout
-            constraints.anchor = GridBagConstraints.CENTER; // Center-align the buttons
-            constraints.insets = new Insets(5, 5, 5, 5); // Add some padding around the buttons
+    private class ButtonCellEditor extends AbstractCellEditor implements TableCellEditor, ActionListener {
+        private JPanel panel;
+        private JButton updateButton;
+        private JButton deleteButton;
+        private int currentRow;
 
-            if (value != null) {
-                // Add the buttons to the panel only if there is a value (i.e., for non-empty rows)
-                JButton updateButton = new JButton("Update");
-                updateButton.setBackground(new Color(52, 152, 219)); // Blue color
-                updateButton.setForeground(Color.WHITE);
-                updateButton.addActionListener(e -> {
-                    // Implement the update functionality
-                    updateProductData(row);
-                });
+        public ButtonCellEditor() {
+            panel = new JPanel(new GridBagLayout()); // Use GridBagLayout for centering
 
-                JButton deleteButton = new JButton("Delete");
-                deleteButton.setBackground(new Color(231, 76, 60)); // Red color
-                deleteButton.setForeground(Color.WHITE);
-                deleteButton.addActionListener(e -> {
-                    // Implement the delete functionality
-                    deleteProductData(row);
-                });
+            updateButton = new JButton("Update");
+            deleteButton = new JButton("Delete");
 
-                // Add buttons to the panel with constraints for centering
-                panel.add(updateButton, constraints);
-                constraints.gridx = 1; // Shift the next button to the right in the layout
-                panel.add(deleteButton, constraints);
-            }
+            updateButton.setBackground(new Color(52, 152, 219));
+            deleteButton.setBackground(new Color(231, 76, 60));
+            updateButton.setForeground(Color.WHITE);
+            deleteButton.setForeground(Color.WHITE);
 
+            updateButton.addActionListener(this);
+            deleteButton.addActionListener(this);
+
+            // Add buttons to the panel with constraints for centering
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.insets = new Insets(2, 5, 2, 5); // Add spacing between buttons
+            panel.add(updateButton, gbc);
+
+            gbc.gridx = 1;
+            panel.add(deleteButton, gbc);
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                boolean isSelected, int row, int column) {
+            currentRow = row;
             return panel;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return ""; // Return an empty string as the cell value
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (e.getSource() == updateButton) {
+                updateProductData(currentRow);
+            } else if (e.getSource() == deleteButton) {
+                deleteProductData(currentRow);
+            }
+            fireEditingStopped(); // Stop editing after button click
         }
     }
 
@@ -113,6 +165,7 @@ public class RegisteredProductsPanel extends JPanel {
         productTable.getColumnModel().getColumn(2).setPreferredWidth(150);  // Set width for the image column
      // Set custom renderer for the Action column (column index 6)
         productTable.getColumnModel().getColumn(6).setCellRenderer(new ButtonCellRenderer());
+        productTable.getColumnModel().getColumn(6).setCellEditor(new ButtonCellEditor());
 
 
         // Initialize buttons
@@ -202,19 +255,13 @@ public class RegisteredProductsPanel extends JPanel {
                 String productName = getStringFromDocument(product, "productName");
                 String category = getStringFromDocument(product, "category");
 
-                // Log the raw data before casting
-                System.out.println("Raw Data: " + product.toJson());
-
-                // Safely retrieve the ratePerPiece and stockQuantity
+                // Safely retrieve ratePerPiece and stockQuantity
                 Object ratePerPieceObj = product.get("ratePerPiece");
                 Double ratePerPiece = ratePerPieceObj instanceof Double ? (Double) ratePerPieceObj :
                         ratePerPieceObj instanceof Integer ? ((Integer) ratePerPieceObj).doubleValue() : 0.0;
 
                 Object stockQuantityObj = product.get("stockQuantity");
                 Integer stockQuantity = stockQuantityObj instanceof Integer ? (Integer) stockQuantityObj : 0;
-
-                // Log the processed data
-                System.out.println("Processed Values - Rate Per Piece: " + ratePerPiece + ", Stock Quantity: " + stockQuantity);
 
                 String imageUrl = product.getString("productImagePath");
 
@@ -225,28 +272,36 @@ public class RegisteredProductsPanel extends JPanel {
                 tableModel.addRow(new Object[]{
                         barcode != null ? barcode : "N/A",
                         productName != null ? productName : "N/A",
-                        productImage,  // IMAGE COLUMN
+                        productImage,
                         category != null ? category : "N/A",
-                        ratePerPiece != null ? ratePerPiece : 0.0,  // Ensure it's a valid Double
+                        ratePerPiece != null ? ratePerPiece : 0.0,
                         stockQuantity != null ? stockQuantity : 0,
-                        // Add Update and Delete buttons in the last column
-                        createUpdateButton(barcode),
-                        createDeleteButton(barcode)
+                        ""  // Action column (button)
                 });
             }
 
             // Set custom renderer for the image column (column index 2)
             productTable.getColumnModel().getColumn(2).setCellRenderer(new ImageCellRenderer());
 
-//             Center the buttons in the last two columns (index 6 and 7)
-         // Apply custom renderer for the Action column (index 6)
-            productTable.getColumnModel().getColumn(6).setCellRenderer(new ButtonCellRenderer());
+            // Center the text in the columns (barcode, productName, category, ratePerPiece, stockQuantity)
+            DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+            centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
 
+            // Apply to the relevant columns (0 - barcode, 1 - productName, 3 - category, 4 - ratePerPiece, 5 - stockQuantity)
+            productTable.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
+            productTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
+            productTable.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
+            productTable.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
+            productTable.getColumnModel().getColumn(5).setCellRenderer(centerRenderer);
+
+            // Apply custom renderer for the Action column (button) at index 6 (center the button if needed)
+            productTable.getColumnModel().getColumn(6).setCellRenderer(new ButtonCellRenderer());
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error loading product data: " + e.getMessage());
         }
     }
+
 
 
 
@@ -258,11 +313,13 @@ public class RegisteredProductsPanel extends JPanel {
         deleteButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         deleteButton.addActionListener(e -> {
+            System.out.println("Delete button clicked");  // For debugging
             int row = findRowByBarcode(barcode);
             if (row != -1) {
-                deleteProductData(row);  // Call the delete method for the selected row
+                deleteProductData(row);
             }
         });
+
 
         return deleteButton;
 	}
@@ -275,6 +332,7 @@ public class RegisteredProductsPanel extends JPanel {
 	    updateButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
 	    
 	    updateButton.addActionListener(e -> {
+	    	System.out.println("Update button clicked");
 	        int row = findRowByBarcode(barcode);
 	        if (row != -1) {
 	            updateProductData(row);  // Call the update method for the selected row
@@ -285,13 +343,16 @@ public class RegisteredProductsPanel extends JPanel {
 	}
 
 	private int findRowByBarcode(String barcode) {
-		 for (int i = 0; i < tableModel.getRowCount(); i++) {
-		        if (tableModel.getValueAt(i, 0).equals(barcode)) {
-		            return i;  // Return the row index of the matching barcode
-		        }
-		    }
-		    return -1;  // Return -1 if barcode is not found
+	    for (int i = 0; i < tableModel.getRowCount(); i++) {
+	        if (tableModel.getValueAt(i, 0).equals(barcode)) {
+	            System.out.println("Found row: " + i);  // For debugging
+	            return i;
+	        }
+	    }
+	    System.out.println("Barcode not found: " + barcode);  // For debugging
+	    return -1;
 	}
+
 
 	private String getStringFromDocument(Document product, String key) {
         Object value = product.get(key);
@@ -414,11 +475,11 @@ public class RegisteredProductsPanel extends JPanel {
             MongoCollection<Document> productCollection = database.getCollection("Product");
 
             // Get the data from the selected row
-            String barcode = (String) tableModel.getValueAt(rowIndex, 0);  // Barcode
+            String barcode = (String) tableModel.getValueAt(rowIndex, 0); // Barcode
             String productName = (String) tableModel.getValueAt(rowIndex, 1); // Product Name
-            String category = (String) tableModel.getValueAt(rowIndex, 2); // Category
-            int ratePerPiece = (Integer) tableModel.getValueAt(rowIndex, 3); // Rate Per Piece
-            int stockQuantity = (Integer) tableModel.getValueAt(rowIndex, 4); // Stock Quantity
+            String category = (String) tableModel.getValueAt(rowIndex, 3); // Category
+            double ratePerPiece = (Double) tableModel.getValueAt(rowIndex, 4); // Rate Per Piece
+            int stockQuantity = (Integer) tableModel.getValueAt(rowIndex, 5); // Stock Quantity
 
             // Ask the user to edit the product details
             String newProductName = JOptionPane.showInputDialog(this, "Enter new product name:", productName);
@@ -442,21 +503,22 @@ public class RegisteredProductsPanel extends JPanel {
             }
 
             try {
-                int newRatePerPiece = Integer.parseInt(newRatePerPieceStr);
+                // Parse the new values
+                double newRatePerPiece = Double.parseDouble(newRatePerPieceStr);
                 int newStockQuantity = Integer.parseInt(newStockQuantityStr);
 
                 // Update the table model with the new values
                 tableModel.setValueAt(newProductName, rowIndex, 1);
-                tableModel.setValueAt(newCategory, rowIndex, 2);
-                tableModel.setValueAt(newRatePerPiece, rowIndex, 3);
-                tableModel.setValueAt(newStockQuantity, rowIndex, 4);
+                tableModel.setValueAt(newCategory, rowIndex, 3);
+                tableModel.setValueAt(newRatePerPiece, rowIndex, 4);
+                tableModel.setValueAt(newStockQuantity, rowIndex, 5);
 
                 // Create the filter for finding the product in the database
                 Document filter = new Document("barcode", barcode);
                 Document updatedProduct = new Document()
                         .append("productName", newProductName)
                         .append("category", newCategory)
-                        .append("ratePerPiece", newRatePerPiece)  // Update the rate per piece
+                        .append("ratePerPiece", newRatePerPiece)
                         .append("stockQuantity", newStockQuantity);
 
                 // Perform the update operation in the database
@@ -473,32 +535,48 @@ public class RegisteredProductsPanel extends JPanel {
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error updating product data: " + e.getMessage());
+            e.printStackTrace(); // Print stack trace for debugging
         }
     }
 
+
+
     private void deleteProductData(int rowIndex) {
-        // Retrieve the product data from the selected table row
         try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> productCollection = database.getCollection("Product");
 
             // Get the barcode of the selected product
             String barcode = (String) tableModel.getValueAt(rowIndex, 0);
+            if (barcode == null || barcode.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Error: Barcode is invalid.");
+                return; // Exit if barcode is invalid
+            }
 
             // Create the filter for finding the product in the database
             Document filter = new Document("barcode", barcode);
 
+            // Debugging: Print the filter to verify
+            System.out.println("Deleting product with filter: " + filter.toJson());
+
             // Perform the delete operation in the database
-            productCollection.deleteOne(filter);
+            DeleteResult result = productCollection.deleteOne(filter);
 
-            // Remove the selected row from the table model
-            tableModel.removeRow(rowIndex);
-
-            // Show confirmation message
-            JOptionPane.showMessageDialog(this, "Product deleted successfully!");
+            // Check if the deletion was successful
+            if (result.getDeletedCount() == 1) {
+                // Remove the selected row from the table model
+                tableModel.removeRow(rowIndex);
+                // Show confirmation message
+                JOptionPane.showMessageDialog(this, "Product deleted successfully!");
+            } else {
+                // Show error message if no product was deleted
+                JOptionPane.showMessageDialog(this, "No product found with the given barcode.");
+            }
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error deleting product data: " + e.getMessage());
+            e.printStackTrace(); // Print stack trace for debugging
         }
     }
+
 }
