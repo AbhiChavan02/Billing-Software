@@ -8,6 +8,8 @@ import org.bson.Document;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
+
 import java.awt.*;
 import java.util.Objects;
 
@@ -26,14 +28,45 @@ public class RegisteredProductsPanel extends JPanel {
         createUI();
         loadProductData();
     }
+    
+
+
+ // In your ImageCellRenderer:
+    private class ImageCellRenderer extends JLabel implements TableCellRenderer {
+        private final int IMAGE_SIZE = 60;  // Set the size of the image (60x60 pixels)
+
+        public ImageCellRenderer() {
+            setHorizontalAlignment(JLabel.CENTER);  // Center-align the image
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            if (value instanceof ImageIcon) {
+                ImageIcon icon = (ImageIcon) value;
+                // Scale the image to a square shape with fixed width and height
+                Image img = icon.getImage().getScaledInstance(IMAGE_SIZE, IMAGE_SIZE, Image.SCALE_SMOOTH);
+                setIcon(new ImageIcon(img));  // Set the resized image
+            } else {
+                setIcon(null);  // In case the value is not an ImageIcon
+            }
+            return this;
+        }
+    }
+
+
+
 
     private void createUI() {
         // Initialize table model and set it to product table
-        tableModel = new DefaultTableModel(new Object[]{"Barcode", "Product Name", "Category", "Rate Per Piece", "Stock Quantity"}, 0);
+        tableModel = new DefaultTableModel(new Object[]{"Barcode", "Product Name", "Image", "Category", "Rate Per Piece", "Stock Quantity"}, 0);
         productTable = new JTable(tableModel);
-        productTable.setRowHeight(25); // Set row height for better readability
+//        productTable.	setRowHeight(25); // Set row height for better readability
         productTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         productTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        
+        // In your createUI method:
+        productTable.setRowHeight(100);  // Increase row height to display larger images
+        productTable.getColumnModel().getColumn(2).setPreferredWidth(150);  // Set width for the image column
 
         // Initialize buttons
         btnUpdate = createActionButton("Update", new Color(52, 152, 219)); // Blue
@@ -44,7 +77,7 @@ public class RegisteredProductsPanel extends JPanel {
         // Initialize search components
         txtSearch = new JTextField(15);
         txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        searchCriteria = new JComboBox<>(new String[]{"Barcode", "Product Name", "Category", "Rate Per Piece", "Stock Quantity"});
+        searchCriteria = new JComboBox<>(new String[]{"Barcode", "Product Name","Image", "Category", "Rate Per Piece", "Stock Quantity"});
         searchCriteria.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
         // Add action listeners for buttons
@@ -114,34 +147,59 @@ public class RegisteredProductsPanel extends JPanel {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> productCollection = database.getCollection("Product");
 
-            // Clear the existing rows in the table model
-            tableModel.setRowCount(0);
+            tableModel.setRowCount(0);  // Clear existing rows
 
-            // Fetch all product documents from MongoDB
             for (Document product : productCollection.find()) {
-                // Safely retrieve fields with default values
                 String barcode = product.getString("barcode");
                 String productName = product.getString("productName");
                 String category = product.getString("category");
                 Number ratePerPiece = product.get("ratePerPiece", Number.class);
                 Integer stockQuantity = product.getInteger("stockQuantity");
+                String imageUrl = product.getString("productImagePath");
 
-                // Add product data to the table model
+                // Load Image from Cloudinary (or set default if missing)
+                ImageIcon productImage = loadProductImage(imageUrl);
+
                 tableModel.addRow(new Object[]{
-                        barcode != null ? barcode : "N/A",
-                        productName != null ? productName : "N/A",
-                        category != null ? category : "N/A",
-                        ratePerPiece != null ? ratePerPiece.intValue() : 0,  // Default to 0 if null
-                        stockQuantity != null ? stockQuantity : 0           // Default to 0 if null
+                    barcode != null ? barcode : "N/A",
+                    productName != null ? productName : "N/A",
+                    productImage,  // IMAGE COLUMN
+                    category != null ? category : "N/A",
+                    ratePerPiece != null ? ratePerPiece.intValue() : 0,
+                    stockQuantity != null ? stockQuantity : 0
                 });
             }
+
+            // Set custom renderer for the image column (column index 2)
+            productTable.getColumnModel().getColumn(2).setCellRenderer(new ImageCellRenderer());
+
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error loading product data: " + e.getMessage());
         }
     }
 
 
-    private void handleSearch() {
+
+    private ImageIcon loadProductImage(String imageUrl) {
+        try {
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                // Load image from Cloudinary URL
+                Image image = new ImageIcon(new java.net.URL(imageUrl)).getImage();
+
+                // Resize image to fit in the table cell (you can adjust the size as needed)
+                Image scaledImage = image.getScaledInstance(60, 60, Image.SCALE_SMOOTH);
+                return new ImageIcon(scaledImage);
+            }
+        } catch (Exception e) {
+            System.out.println("Error loading image: " + e.getMessage());
+        }
+
+        // Return a default placeholder image if image fails to load
+        return new ImageIcon(new ImageIcon("default-placeholder.png").getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH));
+    }
+
+
+	private void handleSearch() {
         String searchValue = txtSearch.getText().trim();
         String criteria = (String) Objects.requireNonNull(searchCriteria.getSelectedItem());
 
@@ -195,12 +253,13 @@ public class RegisteredProductsPanel extends JPanel {
                 Integer stockQuantity = product.getInteger("stockQuantity");
 
                 tableModel.addRow(new Object[]{
-                        barcode != null ? barcode : "N/A",
-                        productName != null ? productName : "N/A",
-                        category != null ? category : "N/A",
-                        ratePerPiece != null ? ratePerPiece.intValue() : 0,  // Default to 0 if null
-                        stockQuantity != null ? stockQuantity : 0           // Default to 0 if null
-                });
+                	    barcode != null ? barcode : "N/A",
+                	    productName != null ? productName : "N/A",
+                	    loadProductImage(product.getString("productImagePath")), // IMAGE COLUMN
+                	    category != null ? category : "N/A",
+                	    ratePerPiece != null ? ratePerPiece.intValue() : 0,
+                	    stockQuantity != null ? stockQuantity : 0
+                	});
             }
 
             if (tableModel.getRowCount() == 0) {

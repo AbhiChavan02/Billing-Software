@@ -1,6 +1,8 @@
 package m3.BillSoftware;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
 import java.awt.*;
 import java.io.File;
 import com.mongodb.client.MongoClient;
@@ -8,6 +10,10 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ProductRegistration extends JFrame {
     private JPanel menuPanel, contentPanel;
@@ -66,7 +72,7 @@ public class ProductRegistration extends JFrame {
 
         // Menu Buttons
         JButton btnRegisterProduct = createMenuButton("Product Registration");
-        JButton btnProcessSales = createMenuButton("Process Sales");
+        JButton btnProcessSales = createMenuButton("Start Sale");
         JButton btnRegisteredProduct = createMenuButton("Registered Products");
         JButton btnSalesHistory = createMenuButton("Sales History");
         JButton btnLogout = createMenuButton("Logout");
@@ -141,6 +147,7 @@ public class ProductRegistration extends JFrame {
         gbc.anchor = GridBagConstraints.CENTER;
 
         ProductRegistrationPanel registrationPanel = new ProductRegistrationPanel(loggedInUsername, loggedInFirstName, loggedInLastName);
+        
         contentPanel.add(registrationPanel, gbc);
 
         contentPanel.revalidate();
@@ -208,6 +215,7 @@ class ProductRegistrationPanel extends JPanel {
     private String loggedInUsername;
     private Color backgroundColor = new Color(241, 242, 246); // Light gray
     private Color formColor = Color.WHITE; // White
+    private Cloudinary cloudinary;
 
     public ProductRegistrationPanel(String username, String firstName, String lastName) {
         // Update logged in user display
@@ -222,6 +230,13 @@ class ProductRegistrationPanel extends JPanel {
                 BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
                 BorderFactory.createEmptyBorder(30, 40, 30, 40)
         ));
+        
+     // Initialize Cloudinary (Replace with your credentials)
+        Map<String, String> config = new HashMap<>();
+        config.put("cloud_name", "dkcxniwte");
+        config.put("api_key", "872993699858565");
+        config.put("api_secret", "qWa0j2TzlDi7gITYZpaQbwkYKGg");
+        cloudinary = new Cloudinary(config);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(12, 15, 12, 15);
@@ -366,95 +381,104 @@ class ProductRegistrationPanel extends JPanel {
     }
 
     private void registerProduct() {
+        System.out.println("Register Product button clicked!"); // Debugging line
+
+        // Step 1: Validate if the image was uploaded successfully
+        if (productImagePath == null || productImagePath.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please upload an image before registering the product!", "Validation Error", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Step 2: Proceed with registering product
         try {
-            // Validate required fields
             String barcode = txtBarcode.getText().trim();
             String productName = txtProductName.getText().trim();
             String category = (String) cmbCategory.getSelectedItem();
             String rateText = txtRatePerPiece.getText().trim();
             String quantityText = txtStockQuantity.getText().trim();
 
-            StringBuilder errors = new StringBuilder();
-
-            if (barcode.isEmpty()) errors.append("• Barcode is required\n");
-            if (productName.isEmpty()) errors.append("• Product Name is required\n");
-            if (rateText.isEmpty()) errors.append("• Rate per Piece is required\n");
-            if (quantityText.isEmpty()) errors.append("• Stock Quantity is required\n");
-
-            if (errors.length() > 0) {
-                JOptionPane.showMessageDialog(this, 
-                    "Please fix the following errors:\n" + errors.toString(), 
-                    "Validation Error", 
-                    JOptionPane.WARNING_MESSAGE);
+            // Validation
+            if (barcode.isEmpty() || productName.isEmpty() || rateText.isEmpty() || quantityText.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "All fields are required!", "Validation Error", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            // Validate numerical values
             double ratePerPiece;
             int stockQuantity;
             try {
                 ratePerPiece = Double.parseDouble(rateText);
-                stockQuantity = Integer.parseInt(quantityText); // Parsing stock quantity here
+                stockQuantity = Integer.parseInt(quantityText);
             } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(this, 
-                    "Invalid numerical values:\n• Rate must be a number\n• Quantity must be a whole number", 
-                    "Input Error", 
-                    JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Invalid numerical values!", "Input Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            
-            
-
+            System.out.println("Proceeding with product registration..."); // Debugging line
 
             // MongoDB connection
-            String uri = "mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/";
-            try (MongoClient mongoClient = MongoClients.create(uri)) {
+            try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
                 MongoDatabase database = mongoClient.getDatabase("testDB");
                 MongoCollection<Document> productCollection = database.getCollection("Product");
 
-                // Check for existing barcode
-                Document existingProduct = productCollection.find(new Document("barcode", barcode)).first();
-                if (existingProduct != null) {
-                    JOptionPane.showMessageDialog(this, 
-                        "A product with this barcode already exists!", 
-                        "Duplicate Entry", 
-                        JOptionPane.WARNING_MESSAGE);
+                if (productCollection.find(new Document("barcode", barcode)).first() != null) {
+                    JOptionPane.showMessageDialog(this, "Barcode already exists!", "Duplicate Entry", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
 
-                // Create new product document
                 Document product = new Document()
-                	    .append("barcode", barcode)
-                	    .append("productName", productName)
-                	    .append("category", category)
-                	    .append("ratePerPiece", ratePerPiece)  // This should be correct
-                	    .append("stockQuantity", stockQuantity)
-                	    .append("productImagePath", productImagePath)
-                	    .append("createdAt", new java.util.Date());
+                    .append("barcode", barcode)
+                    .append("productName", productName)
+                    .append("category", category)
+                    .append("ratePerPiece", ratePerPiece)
+                    .append("stockQuantity", stockQuantity)
+                    .append("productImagePath", productImagePath)  // ✅ Image uploaded before reaching here
+                    .append("createdAt", new java.util.Date());
 
-
-                // Insert into database
                 productCollection.insertOne(product);
-                
-                // Success message with confirmation
-                JOptionPane.showMessageDialog(this, 
-                    "Product registered successfully!\n\n" +
-                    "Barcode: " + barcode + "\n" +
-                    "Name: " + productName + "\n" +
-                    "Category: " + category + "\n" +
-                    "Price: " + ratePerPiece,
-                    "Success", 
-                    JOptionPane.INFORMATION_MESSAGE);
 
+                JOptionPane.showMessageDialog(this, "Product registered successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
                 clearFields();
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, 
-                "Database Error: " + e.getMessage(), 
-                "Connection Error", 
-                JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
+        }
+    }
+    
+    private void uploadImage() {
+        System.out.println("Upload Image button clicked!"); // Debugging line
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileFilter(new FileNameExtensionFilter("Image Files", "jpg", "png", "jpeg"));
+
+        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
+            
+            try {
+                if (selectedFile == null || !selectedFile.exists()) {
+                    JOptionPane.showMessageDialog(this, "Invalid file selected!", "File Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                System.out.println("Uploading image: " + selectedFile.getAbsolutePath()); // Debugging line
+
+                // Upload image to Cloudinary
+                Map<?, ?> uploadResult = cloudinary.uploader().upload(selectedFile, ObjectUtils.emptyMap());
+
+                // Get secure URL
+                productImagePath = (String) uploadResult.get("secure_url");
+
+//                if (productImagePath == null || productImagePath.isEmpty()) {
+//                    JOptionPane.showMessageDialog(this, "Image upload failed!", "Upload Error", JOptionPane.ERROR_MESSAGE);
+//                    return;
+//                }
+//
+//                JOptionPane.showMessageDialog(this, "Image uploaded successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+//                System.out.println("Uploaded Image URL: " + productImagePath); // Debugging line
+
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Image upload failed: " + e.getMessage(), "Upload Error", JOptionPane.ERROR_MESSAGE);
+                e.printStackTrace();
+            }
         }
     }
 
@@ -464,13 +488,8 @@ class ProductRegistrationPanel extends JPanel {
         txtRatePerPiece.setText("");
         txtStockQuantity.setText("");
         cmbCategory.setSelectedIndex(0);
-        productImagePath = "";
+        productImagePath = ""; // ✅ Reset the image path
     }
 
-    private void uploadImage() {
-        JFileChooser fileChooser = new JFileChooser();
-        if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            productImagePath = fileChooser.getSelectedFile().getAbsolutePath();
-        }
-    }
+
 }

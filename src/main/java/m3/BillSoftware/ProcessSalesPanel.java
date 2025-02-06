@@ -35,7 +35,7 @@ public class ProcessSalesPanel extends JPanel {
         gbc.anchor = GridBagConstraints.WEST;
 
         // Header
-        JLabel headerLabel = new JLabel("Process Sales");
+        JLabel headerLabel = new JLabel("Start Sale");
         headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         headerLabel.setForeground(new Color(40, 58, 82)); // Dark blue
 
