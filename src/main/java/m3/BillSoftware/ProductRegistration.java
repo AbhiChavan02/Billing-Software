@@ -44,7 +44,7 @@ public class ProductRegistration extends JFrame {
         gbc.gridx = 0;
 
         // Load company logo with proper scaling
-        JLabel lblCompanyLogo = loadLogo("E:\\PWS\\PWS\\img\\PWS - Logo .png", 200, 100);
+        JLabel lblCompanyLogo = loadLogo("E:\\PWS\\PWS\\img\\RJJewel.jpg", 200, 100);
         
         JPanel userInfoPanel = new JPanel();
         userInfoPanel.setLayout(new BoxLayout(userInfoPanel, BoxLayout.Y_AXIS));

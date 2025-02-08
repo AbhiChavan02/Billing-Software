@@ -13,7 +13,7 @@ import java.util.List;
 
 public class StaffProcessSalesPanel extends JPanel {
     private JTextField txtBarcode, txtProductName, txtPricePerPiece, txtQuantity, 
-                       txtTotalPrice, txtStockQuantity, txtCustomerName;
+                       txtTotalPrice, txtStockQuantity, txtCustomerName, txtFinalPrice;
     private JComboBox<String> cmbStaff;
     private JButton btnProcessSale, btnClear, btnRefresh;
     private Color backgroundColor = new Color(241, 242, 246);
@@ -50,17 +50,20 @@ public class StaffProcessSalesPanel extends JPanel {
 
         // Form Components
         String[] labels = {"Customer Name:", "Staff:", "Barcode:", "Product Name:", 
-                          "Rate Per Piece:", "Stock Quantity:", "Quantity:", "Total Price:"};
+                "Rate Per Piece:", "Stock Quantity:", "Quantity:", "Total Price:", "Final Price:"};
+
         Component[] fields = {
-            txtCustomerName = createFormTextField(),
-            cmbStaff = new JComboBox<>(),
-            createInputPanel(txtBarcode = createFormTextField(), btnRefresh = createActionButton("Refresh", new Color(52, 152, 219))),
-            txtProductName = createFormTextField(),
-            txtPricePerPiece = createFormTextField(),
-            txtStockQuantity = createFormTextField(),
-            txtQuantity = createFormTextField(),
-            txtTotalPrice = createFormTextField()
-        };
+        	    txtCustomerName = createFormTextField(),
+        	    cmbStaff = new JComboBox<>(),
+        	    createInputPanel(txtBarcode = createFormTextField(), btnRefresh = createActionButton("Refresh", new Color(52, 152, 219))),
+        	    txtProductName = createFormTextField(),
+        	    txtPricePerPiece = createFormTextField(),
+        	    txtStockQuantity = createFormTextField(),
+        	    txtQuantity = createFormTextField(),
+        	    txtTotalPrice = createFormTextField(),
+        	    txtFinalPrice = createFormTextField() // ✅ Ensure this is included!
+        	};
+
 
         // Make fields uneditable where needed
         txtProductName.setEditable(false);
@@ -222,6 +225,9 @@ public class StaffProcessSalesPanel extends JPanel {
             // Calculate total price
             double totalPrice = ratePerPiece * quantity;
             txtTotalPrice.setText(String.format("₹%.2f", totalPrice));
+            double finalPrice = Double.parseDouble(txtFinalPrice.getText());
+            double savings = totalPrice - finalPrice;
+            
 
             // Get product name
             String productName = txtProductName.getText().trim();
@@ -243,6 +249,8 @@ public class StaffProcessSalesPanel extends JPanel {
                 	    .append("productName", productName)
                 	    .append("quantity", quantity)
                 	    .append("totalPrice", totalPrice)
+                	    .append("finalPrice", finalPrice)
+                	    .append("savings", savings)
                 	    .append("timestamp", new java.util.Date());
 
                 	database.getCollection("Sales").insertOne(saleRecord);
@@ -268,6 +276,8 @@ public class StaffProcessSalesPanel extends JPanel {
         txtStockQuantity.setText("");
         txtQuantity.setText("");
         txtTotalPrice.setText("");
+        txtFinalPrice.setText("");
         cmbStaff.setSelectedIndex(0);
+        
     }
 }

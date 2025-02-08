@@ -6,6 +6,9 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.printing.PDFPageable;
 import org.bson.Document;
 
 import javax.swing.*;
@@ -17,6 +20,8 @@ import java.awt.Font;
 import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.print.PrinterException;
+import java.awt.print.PrinterJob;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URL;
@@ -127,6 +132,9 @@ public class SalesHistoryPanel extends JPanel {
 
     private void generateInvoice(String barcode, String productName, double totalPrice, double finalPrice, String customerName, String staff, String timestamp, String imageUrl) {
         try {
+            // Calculate savings
+            double savings = totalPrice - finalPrice;
+
             // Create a dialog for the invoice
             JDialog invoiceDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Invoice", true);
             invoiceDialog.setLayout(new BorderLayout());
@@ -141,6 +149,7 @@ public class SalesHistoryPanel extends JPanel {
             invoicePanel.add(new JLabel("Product: " + productName));
             invoicePanel.add(new JLabel("Total Price: " + totalPrice));
             invoicePanel.add(new JLabel("Final Price: " + finalPrice));
+            invoicePanel.add(new JLabel("Savings: " + savings)); // Add savings here
             invoicePanel.add(new JLabel("Customer: " + customerName));
             invoicePanel.add(new JLabel("Seller: " + staff));
             invoicePanel.add(new JLabel("Date: " + timestamp));
@@ -179,48 +188,96 @@ public class SalesHistoryPanel extends JPanel {
         }
     }
 
-    private void downloadInvoiceAsPDF(String barcode, String productName, double totalPrice, double finalPrice, String customerName, String staff, String timestamp, String imageUrl) {
-        try {
-            // Create a PDF document
-            com.itextpdf.text.Document pdfDoc = new com.itextpdf.text.Document();
+
+private void downloadInvoiceAsPDF(String barcode, String productName, double totalPrice, double finalPrice, String customerName, String staff, String timestamp, String imageUrl) {
+    try {
+        // Show dialog with "Print" and "E-Invoice" options
+        String[] options = {"Print", "E-Invoice"};
+        int choice = JOptionPane.showOptionDialog(
+            this,
+            "Select an option:",
+            "Download Invoice",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            options,
+            options[0]
+        );
+
+        // Calculate savings
+        double savings = totalPrice - finalPrice;
+
+        // Create PDF document
+        com.itextpdf.text.Document pdfDoc = new com.itextpdf.text.Document();
+        File file;
+
+        if (choice == 1) { // E-Invoice (Save to file)
             JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setDialogTitle("Save PDF");
+            fileChooser.setDialogTitle("Save E-Invoice");
 
-            // Set default file name
-            fileChooser.setSelectedFile(new File(productName + "_Invoice.pdf"));
-
+            fileChooser.setSelectedFile(new File(productName + "_E-Invoice.pdf"));
             if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-                File file = fileChooser.getSelectedFile();
+                file = fileChooser.getSelectedFile();
                 if (!file.getName().toLowerCase().endsWith(".pdf")) {
                     file = new File(file.getAbsolutePath() + ".pdf");
                 }
-
-                PdfWriter.getInstance(pdfDoc, new FileOutputStream(file));
-                pdfDoc.open();
-
-                // Add content to the PDF
-                pdfDoc.add(new Paragraph("Invoice"));
-                pdfDoc.add(new Paragraph(" "));
-                pdfDoc.add(new Paragraph("Barcode: " + barcode));
-                pdfDoc.add(new Paragraph("Product Name: " + productName));
-                pdfDoc.add(new Paragraph("Product Image: " + imageUrl));
-                pdfDoc.add(new Paragraph("Total Price: ₹" + totalPrice));
-                pdfDoc.add(new Paragraph("Final Price: ₹" + finalPrice));
-                pdfDoc.add(new Paragraph("Customer Name: " + customerName));
-                pdfDoc.add(new Paragraph("Seller: " + staff));
-                pdfDoc.add(new Paragraph("Date: " + timestamp));
-                pdfDoc.add(new Paragraph(" "));
-                pdfDoc.add(new Paragraph("Thank you for your business!"));
-
-                pdfDoc.close();
-
-                JOptionPane.showMessageDialog(this, "PDF saved successfully: " + file.getAbsolutePath());
+            } else {
+                return;
             }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error generating PDF: " + e.getMessage());
+        } else { // Print (Save temporarily)
+            file = new File(System.getProperty("java.io.tmpdir"), productName + "_Invoice.pdf");
         }
-    }
 
+        PdfWriter.getInstance(pdfDoc, new FileOutputStream(file));
+        pdfDoc.open();
+
+        pdfDoc.add(new Paragraph("Invoice"));
+        pdfDoc.add(new Paragraph(" "));
+        pdfDoc.add(new Paragraph("Barcode: " + barcode));
+        pdfDoc.add(new Paragraph("Product Name: " + productName));
+        pdfDoc.add(new Paragraph("Total Price: ₹" + totalPrice));
+        pdfDoc.add(new Paragraph("Final Price: ₹" + finalPrice));
+        pdfDoc.add(new Paragraph("Savings: ₹" + savings));
+        pdfDoc.add(new Paragraph("Customer Name: " + customerName));
+        pdfDoc.add(new Paragraph("Seller: " + staff));
+        pdfDoc.add(new Paragraph("Date: " + timestamp));
+        pdfDoc.add(new Paragraph(" "));
+        pdfDoc.add(new Paragraph("Thank you for your business!"));
+
+        pdfDoc.close();
+
+        if (choice == 0) { // Print option selected
+            printPDF(file); // Call the new print method
+        } else {
+            JOptionPane.showMessageDialog(this, "E-Invoice saved successfully: " + file.getAbsolutePath());
+        }
+
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, "Error generating PDF: " + e.getMessage());
+    }
+}
+
+// Method to print the PDF directly
+private void printPDF(File file) {
+    try {
+        PDDocument document = PDDocument.load(file);
+        PrinterJob job = PrinterJob.getPrinterJob();
+
+        // Let user select a printer
+        if (job.printDialog()) {
+            job.setPageable(new PDFPageable(document));
+            job.print();
+            JOptionPane.showMessageDialog(this, "Printing started...");
+        } else {
+            JOptionPane.showMessageDialog(this, "Printing cancelled.");
+        }
+
+        document.close();
+    } catch (IOException | PrinterException e) {
+        JOptionPane.showMessageDialog(this, "Printing error: " + e.getMessage());
+    }
+}
+    
     private ImageIcon loadProductImage(String imageUrl) {
         try {
             if (imageUrl != null && !imageUrl.isEmpty()) {
@@ -301,7 +358,8 @@ public class SalesHistoryPanel extends JPanel {
             downloadButton.setForeground(Color.WHITE);
 
             downloadButton.addActionListener(this);
-
+            
+            
             GridBagConstraints gbc = new GridBagConstraints();
             gbc.insets = new Insets(2, 5, 2, 5);
             gbc.gridx = 0;
@@ -337,6 +395,9 @@ public class SalesHistoryPanel extends JPanel {
         String staff = (String) tableModel.getValueAt(row, 6);
         String timestamp = (String) tableModel.getValueAt(row, 7);
         String imageUrl = ""; // Fetch image URL if needed
+
+        // Calculate savings
+        double savings = totalPrice - finalPrice;
 
         downloadInvoiceAsPDF(barcode, productName, totalPrice, finalPrice, customerName, staff, timestamp, imageUrl);
     }
