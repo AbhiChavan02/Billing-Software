@@ -114,7 +114,11 @@ public class ProductRegistration extends JFrame {
         }
 
         ImageIcon originalIcon = new ImageIcon(path);
+        System.out.println("Original Icon loaded: " + originalIcon);
+
         Image scaledImage = originalIcon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
+        System.out.println("Scaled Image: " + scaledImage);
+
         return new JLabel(new ImageIcon(scaledImage));
     }
 

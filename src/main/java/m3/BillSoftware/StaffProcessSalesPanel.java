@@ -13,7 +13,7 @@ import java.util.List;
 
 public class StaffProcessSalesPanel extends JPanel {
     private JTextField txtBarcode, txtProductName, txtPricePerPiece, txtQuantity, 
-                      txtWeight, txtTotalPrice, txtStockQuantity, txtCustomerName;
+                       txtTotalPrice, txtStockQuantity, txtCustomerName;
     private JComboBox<String> cmbStaff;
     private JButton btnProcessSale, btnClear, btnRefresh;
     private Color backgroundColor = new Color(241, 242, 246);
@@ -40,7 +40,7 @@ public class StaffProcessSalesPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
         // Header
-        JLabel headerLabel = new JLabel("Process Sales - Staff");
+        JLabel headerLabel = new JLabel("Start Sale - Staff");
         headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         headerLabel.setForeground(new Color(40, 58, 82));
         gbc.gridwidth = 2;
@@ -50,8 +50,7 @@ public class StaffProcessSalesPanel extends JPanel {
 
         // Form Components
         String[] labels = {"Customer Name:", "Staff:", "Barcode:", "Product Name:", 
-                          "Rate Per Piece:", "Stock Quantity:", "Quantity:", 
-                          "Weight (grams):", "Total Price:"};
+                          "Rate Per Piece:", "Stock Quantity:", "Quantity:", "Total Price:"};
         Component[] fields = {
             txtCustomerName = createFormTextField(),
             cmbStaff = new JComboBox<>(),
@@ -60,7 +59,6 @@ public class StaffProcessSalesPanel extends JPanel {
             txtPricePerPiece = createFormTextField(),
             txtStockQuantity = createFormTextField(),
             txtQuantity = createFormTextField(),
-            txtWeight = createFormTextField(),
             txtTotalPrice = createFormTextField()
         };
 
@@ -207,15 +205,12 @@ public class StaffProcessSalesPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Please fill all required fields");
                 return;
             }
+            
 
             double ratePerPiece = Double.parseDouble(txtPricePerPiece.getText());
             int quantity = Integer.parseInt(txtQuantity.getText());
 
-            // Handle weight safely (if empty, default to 0)
-            double weight = 0.0;
-            if (!txtWeight.getText().trim().isEmpty()) {
-                weight = Double.parseDouble(txtWeight.getText());
-            }
+
 
             // Fetch stock quantity and check availability
             int stockQuantity = Integer.parseInt(txtStockQuantity.getText());
@@ -242,16 +237,15 @@ public class StaffProcessSalesPanel extends JPanel {
 
                 // Create sales record (including product name)
                 Document saleRecord = new Document()
-                    .append("customer", txtCustomerName.getText())
-                    .append("staff", cmbStaff.getSelectedItem())
-                    .append("barcode", txtBarcode.getText())
-                    .append("productName", productName)
-                    .append("quantity", quantity)
-                    .append("weight", weight)
-                    .append("totalPrice", totalPrice)
-                    .append("timestamp", new java.util.Date());
+                	    .append("customerName", txtCustomerName.getText()) // ✅ Ensure this exists
+                	    .append("staff", cmbStaff.getSelectedItem())
+                	    .append("barcode", txtBarcode.getText())
+                	    .append("productName", productName)
+                	    .append("quantity", quantity)
+                	    .append("totalPrice", totalPrice)
+                	    .append("timestamp", new java.util.Date());
 
-                database.getCollection("Sales").insertOne(saleRecord);
+                	database.getCollection("Sales").insertOne(saleRecord);
 
                 JOptionPane.showMessageDialog(this, "✅ Sale processed successfully!");
                 clearFields();
@@ -273,7 +267,6 @@ public class StaffProcessSalesPanel extends JPanel {
         txtPricePerPiece.setText("");
         txtStockQuantity.setText("");
         txtQuantity.setText("");
-        txtWeight.setText("");
         txtTotalPrice.setText("");
         cmbStaff.setSelectedIndex(0);
     }

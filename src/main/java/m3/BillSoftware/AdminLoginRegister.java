@@ -26,7 +26,7 @@ public class AdminLoginRegister extends JFrame {
 
         mainPanel = new JPanel(new GridBagLayout());
         mainPanel.setBackground(new Color(241, 242, 246));
-        add(mainPanel, BorderLayout.CENTER);
+        add(mainPanel, 	BorderLayout.CENTER);
 
         initializeUI();
         toggleMode();

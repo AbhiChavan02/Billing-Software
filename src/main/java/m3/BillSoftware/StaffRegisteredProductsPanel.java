@@ -7,8 +7,12 @@ import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
+
 import java.awt.*;
+import java.net.URL;
 import java.util.Objects;
 
 public class StaffRegisteredProductsPanel extends JPanel {
@@ -27,12 +31,40 @@ public class StaffRegisteredProductsPanel extends JPanel {
         loadProductData();
     }
 
+    // Image renderer class (added)
+    private class ImageCellRenderer extends JLabel implements TableCellRenderer {
+        private final int IMAGE_SIZE = 60;
+
+        public ImageCellRenderer() {
+            setHorizontalAlignment(JLabel.CENTER);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, 
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            if (value instanceof ImageIcon) {
+                ImageIcon icon = (ImageIcon) value;
+                Image img = icon.getImage().getScaledInstance(IMAGE_SIZE, IMAGE_SIZE, Image.SCALE_SMOOTH);
+                setIcon(new ImageIcon(img));
+            } else {
+                setIcon(null);
+            }
+            return this;
+        }
+    }
+
     private void createUI() {
-        tableModel = new DefaultTableModel(new Object[]{"Barcode", "Product Name", "Category", "Rate Per Piece", "Stock Quantity"}, 0);
+        // Added "Image" column
+        tableModel = new DefaultTableModel(new Object[]{"Barcode", "Product Name", "Image", "Category", "Rate Per Piece", "Stock Quantity"}, 0);
+        
         productTable = new JTable(tableModel);
-        productTable.setRowHeight(25);
+        productTable.setRowHeight(70);  // Increased row height
         productTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         productTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        
+        // Set image column properties
+        productTable.getColumnModel().getColumn(2).setPreferredWidth(150);
+        productTable.getColumnModel().getColumn(2).setCellRenderer(new ImageCellRenderer());
 
         btnRefresh = createActionButton("Refresh", new Color(46, 204, 113));
         btnSearch = createActionButton("Search", new Color(241, 196, 15));
@@ -58,20 +90,18 @@ public class StaffRegisteredProductsPanel extends JPanel {
         add(new JScrollPane(productTable), BorderLayout.CENTER);
     }
 
-    private JButton createActionButton(String text, Color bgColor) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btn.setForeground(Color.WHITE);
-        btn.setBackground(bgColor);
-        btn.setFocusPainted(false);
-        btn.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) { btn.setBackground(bgColor.darker()); }
-            public void mouseExited(java.awt.event.MouseEvent evt) { btn.setBackground(bgColor); }
-        });
-        return btn;
+    // Added image loading method
+    private ImageIcon loadProductImage(String imageUrl) {
+        try {
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                Image image = new ImageIcon(new URL(imageUrl)).getImage();
+                Image scaledImage = image.getScaledInstance(60, 60, Image.SCALE_SMOOTH);
+                return new ImageIcon(scaledImage);
+            }
+        } catch (Exception e) {
+            System.out.println("Error loading image: " + e.getMessage());
+        }
+        return new ImageIcon(new ImageIcon("default-placeholder.png").getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH));
     }
 
     private void loadProductData() {
@@ -86,10 +116,13 @@ public class StaffRegisteredProductsPanel extends JPanel {
                 String category = product.getString("category");
                 Number ratePerPiece = product.get("ratePerPiece", Number.class);
                 Integer stockQuantity = product.getInteger("stockQuantity");
+                String imageUrl = product.getString("productImagePath");
                 
+                // Added image column
                 tableModel.addRow(new Object[]{
                     barcode != null ? barcode : "N/A",
                     productName != null ? productName : "N/A",
+                    loadProductImage(imageUrl),  // Image column
                     category != null ? category : "N/A",
                     ratePerPiece != null ? ratePerPiece.intValue() : 0,
                     stockQuantity != null ? stockQuantity : 0
@@ -149,6 +182,7 @@ public class StaffRegisteredProductsPanel extends JPanel {
                 tableModel.addRow(new Object[]{
                     product.getString("barcode"),
                     product.getString("productName"),
+                    loadProductImage(product.getString("productImagePath")),  // Image column
                     product.getString("category"),
                     product.get("ratePerPiece", Number.class),
                     product.getInteger("stockQuantity")
@@ -161,5 +195,22 @@ public class StaffRegisteredProductsPanel extends JPanel {
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error performing search: " + e.getMessage());
         }
+    }
+
+    // Rest of the code remains unchanged
+    private JButton createActionButton(String text, Color bgColor) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btn.setForeground(Color.WHITE);
+        btn.setBackground(bgColor);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) { btn.setBackground(bgColor.darker()); }
+            public void mouseExited(java.awt.event.MouseEvent evt) { btn.setBackground(bgColor); }
+        });
+        return btn;
     }
 }

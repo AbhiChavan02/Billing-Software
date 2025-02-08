@@ -2,6 +2,7 @@ package m3.BillSoftware;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 
 public class StaffDashboard extends JFrame {
     private JPanel menuPanel, contentPanel;
@@ -15,6 +16,28 @@ public class StaffDashboard extends JFrame {
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+        
+     // Load company logo with proper scaling
+        JLabel lblCompanyLogo = loadLogo("E:\\PWS\\PWS\\img\\PWS - Logo .png", 200, 100);
+        
+        JPanel userInfoPanel = new JPanel();
+        userInfoPanel.setLayout(new BoxLayout(userInfoPanel, BoxLayout.Y_AXIS));
+        userInfoPanel.setBackground(primaryColor);
+        userInfoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        
+        
+     // In the constructor:
+        if (lblCompanyLogo != null) {
+            userInfoPanel.add(lblCompanyLogo);
+            System.out.println("Logo added to userInfoPanel");
+        } else {
+            System.out.println("Logo is null, not added to userInfoPanel");
+        }
+        
+        
+        
+        
 
         // Create Menu Panel (Left Side)
         menuPanel = new JPanel();
@@ -22,8 +45,10 @@ public class StaffDashboard extends JFrame {
         menuPanel.setPreferredSize(new Dimension(280, getHeight()));
         menuPanel.setBackground(primaryColor);
         menuPanel.setBorder(BorderFactory.createEmptyBorder(30, 20, 30, 20));
+        
+        
 
-        JButton btnProcessSales = createMenuButton("Process Sales");
+        JButton btnProcessSales = createMenuButton("Start Sale");
         JButton btnRegisteredProducts = createMenuButton("Registered Products");
         JButton btnLogout = createMenuButton("Logout");
 
@@ -55,6 +80,18 @@ public class StaffDashboard extends JFrame {
             new StaffLoginRegister().setVisible(true);
         });
     }
+    
+    private JLabel loadLogo(String path, int width, int height) {
+        File file = new File(path);
+        if (!file.exists()) {
+            System.out.println("Error: Image not found at " + path);
+            return null;
+        }
+
+        ImageIcon originalIcon = new ImageIcon(path);
+        Image scaledImage = originalIcon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
+        return new JLabel(new ImageIcon(scaledImage));
+    }
 
     private JButton createMenuButton(String text) {
         JButton btn = new JButton(text);
@@ -81,6 +118,8 @@ public class StaffDashboard extends JFrame {
         contentPanel.add(new StaffProcessSalesPanel(), BorderLayout.CENTER);
         contentPanel.revalidate();
         contentPanel.repaint();
+        
+        
     }
 
     private void openRegisteredProducts() {
