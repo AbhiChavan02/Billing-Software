@@ -47,7 +47,8 @@ public class ProcessSalesPanel extends JPanel {
         for (String font : fonts) {
             System.out.println(font);
         }
-        
+     
+
         
 
 
@@ -75,6 +76,24 @@ public class ProcessSalesPanel extends JPanel {
         txtTotalPrice.setEditable(false);
         txtFinalPrice = createFormTextField(20);
  
+        
+     // Add a DocumentListener to the txtQuantity field
+     txtQuantity.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+         @Override
+         public void insertUpdate(javax.swing.event.DocumentEvent e) {
+             updateTotalPrice();  // Recalculate total price when quantity is inserted
+         }
+
+         @Override
+         public void removeUpdate(javax.swing.event.DocumentEvent e) {
+             updateTotalPrice();  // Recalculate total price when quantity is removed or modified
+         }
+
+         @Override
+         public void changedUpdate(javax.swing.event.DocumentEvent e) {
+             updateTotalPrice();  // Recalculate total price if there is a change
+         }
+     });
 
         btnRefresh = createActionButton("Refresh", new Color(52, 152, 219)); // Blue
         btnProcessSale = createActionButton("Process Sale", new Color(46, 204, 113)); // Green
@@ -186,6 +205,7 @@ public class ProcessSalesPanel extends JPanel {
         ));
         return textField;
     }
+    
 
     private JButton createActionButton(String text, Color bgColor) {
         JButton btn = new JButton(text);
@@ -208,7 +228,26 @@ public class ProcessSalesPanel extends JPanel {
 
         return btn;
     }
-    
+    private void updateTotalPrice() {
+        try {
+            // Get the rate per piece (assuming this has already been set in txtPricePerGram)
+            double ratePerPiece = Double.parseDouble(txtPricePerGram.getText());
+            
+            // Get the quantity from the txtQuantity field
+            int quantity = Integer.parseInt(txtQuantity.getText().trim());
+
+            // Calculate the total price (rate * quantity)
+            double totalPrice = ratePerPiece * quantity;
+
+            // Set the total price in the txtTotalPrice field
+            txtTotalPrice.setText(String.valueOf(totalPrice));
+            
+        } catch (NumberFormatException e) {
+            // If there's an error with parsing, handle it here (e.g., reset to 0)
+            txtTotalPrice.setText("0.0");
+        }
+    }
+
     private java.awt.Font getSafeFont(String fontName, int style, int size) {
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
         String[] availableFonts = ge.getAvailableFontFamilyNames();
@@ -248,7 +287,7 @@ public class ProcessSalesPanel extends JPanel {
                 txtProductName.setText(product.getString("productName"));
 
                 // CORRECTED: Use "ratePerPiece" (lowercase) to match the MongoDB field
-                Object ratePerPieceObj = product.get("ratePerPiece"); // <-- Fix here
+                Object ratePerPieceObj = product.get("ratePerPiece");
                 double ratePerPiece = 0.0;  // Default value
                 if (ratePerPieceObj instanceof Number) {
                     ratePerPiece = ((Number) ratePerPieceObj).doubleValue();
@@ -260,10 +299,37 @@ public class ProcessSalesPanel extends JPanel {
                         JOptionPane.showMessageDialog(this, "ratePerPiece is invalid in the database!");
                     }
                 }
+             // Assuming txtPricePerGram, txtStockQuantity, and txtTotalPrice are your JTextFields
+
                 txtPricePerGram.setText(String.valueOf(ratePerPiece));
 
-                // Set stock quantity safely
-                txtStockQuantity.setText(String.valueOf(product.getInteger("stockQuantity", 0)));
+                // Get stock quantity safely
+                int stockQuantity = product.getInteger("stockQuantity", 0);
+                txtStockQuantity.setText(String.valueOf(stockQuantity));
+
+                // Get quantity from the txtTotalPrice field
+                int quantity = 0;
+                try {
+                    quantity = Integer.parseInt(txtTotalPrice.getText().trim());  // Parse the quantity
+                } catch (NumberFormatException e) {
+                    // If parsing fails, set quantity to 0 (or you can show a message if you prefer)
+                    quantity = 0;
+                }
+
+                // Calculate total amount based on quantity
+                double totalAmount;
+                if (quantity == 0) {
+                    // If quantity is 0, show the actual price (rate per piece)
+                    totalAmount = ratePerPiece;
+                } else {
+                    // If quantity is greater than 0, multiply rate with quantity
+                    totalAmount = ratePerPiece * quantity;
+                }
+
+                // Display the calculated total amount in the txtTotalPrice field
+                txtTotalPrice.setText(String.valueOf(totalAmount));  // Assuming you want to show total amount in txtTotalPrice
+
+
             } else {
                 JOptionPane.showMessageDialog(this, "Product not found.");
             }
@@ -271,6 +337,7 @@ public class ProcessSalesPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Error connecting to the database: " + e.getMessage());
         }
     }
+
 
 
     private void processSale() {

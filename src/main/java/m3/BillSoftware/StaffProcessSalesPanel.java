@@ -269,7 +269,7 @@ public class StaffProcessSalesPanel extends JPanel {
 
 
     private void clearFields() {
-        txtCustomerName.setText("");
+        txtCustomerName.setText("");	
         txtBarcode.setText("");
         txtProductName.setText("");
         txtPricePerPiece.setText("");
