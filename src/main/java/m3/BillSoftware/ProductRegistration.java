@@ -2,24 +2,24 @@ package m3.BillSoftware;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-
 import javax.swing.filechooser.FileNameExtensionFilter;
-
 import java.awt.*;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import org.bson.Document;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import java.util.HashMap;
-import java.util.Map;
+import org.bson.Document;
 
 public class ProductRegistration extends JFrame {
     private JPanel menuPanel, contentPanel;
@@ -34,7 +34,7 @@ public class ProductRegistration extends JFrame {
         this.loggedInUsername = username;
         this.loggedInFirstName = firstName;
         this.loggedInLastName = lastName;
-        
+
         setTitle("Jewelry POS System - Logged in as: " + loggedInUsername);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -51,20 +51,20 @@ public class ProductRegistration extends JFrame {
 
         // Load company logo with proper scaling
         JLabel lblCompanyLogo = loadLogo("E:\\PWS\\PWS\\img\\RJJewel.jpg", 200, 100);
-        
+
         JPanel userInfoPanel = new JPanel();
         userInfoPanel.setLayout(new BoxLayout(userInfoPanel, BoxLayout.Y_AXIS));
         userInfoPanel.setBackground(primaryColor);
         userInfoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
+
         if (lblCompanyLogo != null) {
             userInfoPanel.add(lblCompanyLogo);
         }
-        
+
         JLabel lblUserName = new JLabel(loggedInFirstName + " " + loggedInLastName);
         lblUserName.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblUserName.setForeground(Color.WHITE);
-        
+
         JLabel lblUserRole = new JLabel("(" + loggedInUsername + ")");
         lblUserRole.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         lblUserRole.setForeground(new Color(200, 200, 200));
@@ -90,7 +90,6 @@ public class ProductRegistration extends JFrame {
         gbc.gridy = 4; menuPanel.add(btnSalesHistory, gbc);
         gbc.gridy = 5; menuPanel.add(btnTotalStock, gbc);
         gbc.gridy = 6; menuPanel.add(btnLogout, gbc);
-        
 
         // Create Content Panel (Right Side)
         contentPanel = new JPanel(new BorderLayout());
@@ -103,18 +102,17 @@ public class ProductRegistration extends JFrame {
         splitPane.setDividerSize(3);
         add(splitPane, BorderLayout.CENTER);
 
-     // Button Actions
+        // Button Actions
         btnRegisterProduct.addActionListener(e -> openProductRegistration());
-        btnProcessSales.addActionListener(e -> openProcessSales());   // Missing Action Listener
-        btnRegisteredProduct.addActionListener(e -> openRegisteredProducts()); // Missing Action Listener
-        btnSalesHistory.addActionListener(e -> openSalesHistory());   // Missing Action Listener
+        btnProcessSales.addActionListener(e -> openProcessSales());
+        btnRegisteredProduct.addActionListener(e -> openRegisteredProducts());
+        btnSalesHistory.addActionListener(e -> openSalesHistory());
         btnTotalStock.addActionListener(e -> openProductStats());
 
         btnLogout.addActionListener(e -> {
             dispose();
             new AdminLoginRegister().setVisible(true);
         });
-
     }
 
     private JLabel loadLogo(String path, int width, int height) {
@@ -162,162 +160,147 @@ public class ProductRegistration extends JFrame {
         gbc.anchor = GridBagConstraints.CENTER;
 
         ProductRegistrationPanel registrationPanel = new ProductRegistrationPanel(loggedInUsername, loggedInFirstName, loggedInLastName);
-        
+
         contentPanel.add(registrationPanel, gbc);
 
         contentPanel.revalidate();
         contentPanel.repaint();
     }
+    
+    
     private void openProductStats() {
-        contentPanel.removeAll();  // Clear existing content
+        contentPanel.removeAll();
 
-        // Create a panel for displaying the stats
         JPanel statsPanel = new JPanel();
-        statsPanel.setBackground(new Color(241, 242, 246));  // Light gray background
+        statsPanel.setBackground(new Color(241, 242, 246));
         statsPanel.setLayout(new BoxLayout(statsPanel, BoxLayout.Y_AXIS));
 
-        // Add a title
         JLabel titleLabel = new JLabel("Product Statistics");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(40, 58, 82));  // Dark blue
+        titleLabel.setForeground(new Color(40, 58, 82));
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         statsPanel.add(titleLabel);
         statsPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        // Create the panel for the 4 metric cards
-        JPanel metricsPanel = new JPanel();
-        metricsPanel.setLayout(new GridLayout(1, 4, 10, 10));  // 1 row, 4 columns, with 10px gap
-        metricsPanel.setBackground(new Color(241, 242, 246));  // Light gray background
+        JPanel metricsPanel = new JPanel(new GridLayout(1, 4, 10, 10));
+        metricsPanel.setBackground(new Color(241, 242, 246));
 
-        // Fetch the product stats from the database
         try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> productCollection = database.getCollection("Product");
+            MongoCollection<Document> salesCollection = database.getCollection("Sales");
 
-            // Calculate the total number of products, total quantity, and total price
+            // Calculate total products and stock
             long totalProducts = productCollection.countDocuments();
             int totalQuantity = 0;
-            double totalPrice = 0;
+            double totalValue = 0;
+            int soldProducts = 0;
 
-            for (Document product : productCollection.find()) {
-                int stockQuantity = product.getInteger("stockQuantity");
-                double pricePerPiece = product.getDouble("ratePerPiece");
-                totalQuantity += stockQuantity;
-                totalPrice += pricePerPiece * stockQuantity;
+            // Get total sales from sales collection
+            for (Document sale : salesCollection.find()) {
+                soldProducts += sale.getInteger("quantity", 0);
             }
 
-            // Create the 4 metric cards with relevant data
-            JPanel totalProductsBox = createMetricBox("Total Products", String.valueOf(totalProducts), new Color(52, 152, 219));
-            JPanel totalQuantityBox = createMetricBox("Total Quantity", String.valueOf(totalQuantity), new Color(46, 204, 113));
-            JPanel totalPriceBox = createMetricBox("Total Price", "₹" + String.format("%.2f", totalPrice), new Color(231, 76, 60));
-            JPanel soldProductsBox = createMetricBox("Sold Products", "0", new Color(241, 196, 15));  // Placeholder for sold products
+            // Calculate available stock values
+            for (Document product : productCollection.find()) {
+                int stock = product.getInteger("stockQuantity", 0);
+                totalQuantity += stock;
 
-            // Add the metric cards to the metrics panel
+                String category = product.getString("category");
+                if ("Emetation".equalsIgnoreCase(category)) {
+//                    double purchasePrice = product.getDouble("purchasePrice");
+                    double salePrice = product.getDouble("salesPrice");
+                    totalValue += salePrice * stock;
+                } else {
+                    double grams = product.getDouble("grams");
+//                    totalValue += grams * stock; // Assuming grams represents value for precious metals
+                }
+            }
+
+            // Create metric boxes
+            JPanel totalProductsBox = createMetricBox("Total Products", String.valueOf(totalProducts), new Color(52, 152, 219));
+            JPanel availableStockBox = createMetricBox("Available Stock", String.valueOf(totalQuantity), new Color(46, 204, 113));
+            JPanel totalValueBox = createMetricBox("Total Value", "₹" + String.format("%.2f", totalValue), new Color(231, 76, 60));
+            JPanel soldProductsBox = createMetricBox("Sold Products", String.valueOf(soldProducts), new Color(241, 196, 15));
+
             metricsPanel.add(totalProductsBox);
-            metricsPanel.add(totalQuantityBox);
-            metricsPanel.add(totalPriceBox);
+            metricsPanel.add(availableStockBox);
+            metricsPanel.add(totalValueBox);
             metricsPanel.add(soldProductsBox);
 
-            // Add the metrics panel to the stats panel
             statsPanel.add(metricsPanel);
             statsPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-            // Create the product card panel with FlowLayout
-            JPanel productCardPanel = new JPanel();
-            productCardPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));  // Left-aligned, with 10px horizontal and vertical gaps
-            productCardPanel.setBackground(new Color(241, 242, 246)); // Ensure background is consistent
+            // Product cards
+            JPanel productCardPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+            productCardPanel.setBackground(new Color(241, 242, 246));
 
-            // Iterate over all products to create the product cards
             for (Document product : productCollection.find()) {
-                String productName = product.getString("productName");
-                double pricePerPiece = product.getDouble("ratePerPiece");
-                int stockQuantity = product.getInteger("stockQuantity");
-                double totalProductPrice = pricePerPiece * stockQuantity;
-                String imagePath = product.getString("productImagePath");  // Assuming you store the image path in the database
-
-                // Create a card for each product
                 JPanel productCard = new JPanel();
-                
+                productCard.setLayout(new BoxLayout(productCard, BoxLayout.Y_AXIS));
                 productCard.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-                productCard.setBackground(new Color(255, 255, 255));  // White background for cards
-                productCard.setLayout(new BoxLayout(productCard, BoxLayout.Y_AXIS));  // Let the card grow with content
-                productCard.setPreferredSize(new Dimension(180, 220));  // Increased height to accommodate image
+                productCard.setBackground(Color.WHITE);
+                productCard.setPreferredSize(new Dimension(180, 220));
 
                 // Product Image
-                if (imagePath != null && !imagePath.isEmpty()) {
-                    ImageIcon imageIcon = new ImageIcon(new ImageIcon(imagePath).getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH));
-                    JLabel imageLabel = new JLabel(imageIcon);
-                    imageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                    productCard.add(imageLabel);
-                    productCard.add(Box.createRigidArea(new Dimension(0, 5)));
+                ImageIcon productImage = loadProductImage(product.getString("productImagePath"));
+                JLabel imageLabel = new JLabel(productImage);
+                imageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                productCard.add(imageLabel);
+                productCard.add(Box.createRigidArea(new Dimension(0, 5)));
+
+                // Product Details
+                addProductDetail(productCard, "Name: " + product.getString("productName"));
+                addProductDetail(productCard, "Category: " + product.getString("category"));
+                
+                String category = product.getString("category");
+                if ("Emetation".equalsIgnoreCase(category)) {
+                    addProductDetail(productCard, "Purchase: ₹" + product.getDouble("purchasePrice"));
+                    addProductDetail(productCard, "Sale: ₹" + product.getDouble("salesPrice"));
+                } else {
+                    addProductDetail(productCard, "Grams: " + product.getDouble("grams") + "g");
                 }
-
-             // Product Image
-                JLabel productImageLabel = new JLabel();
-                ImageIcon productImageIcon = loadImageFromUrl(imagePath);  // Load image from Cloudinary URL
-                productImageLabel.setIcon(productImageIcon);
-                productImageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                productImageLabel.setPreferredSize(new Dimension(60, 60));  // Fixed size for image
-
-                // Product Name
-                JLabel productNameLabel = new JLabel("Name: " + productName);
-                productNameLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-                productNameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-                // Product Price
-                JLabel productPriceLabel = new JLabel("Price: ₹" + String.format("%.2f", pricePerPiece));
-                productPriceLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-                productPriceLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-                // Product Quantity
-                JLabel productQtyLabel = new JLabel("Qty: " + stockQuantity);
-                productQtyLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-                productQtyLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-                // Product Total Price
-                JLabel productTotalPriceLabel = new JLabel("Total: ₹" + String.format("%.2f", totalProductPrice));
-                productTotalPriceLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
-                productTotalPriceLabel.setForeground(new Color(46, 204, 113));  // Green for price
-                productTotalPriceLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-
-
-
-                // Add the labels to the product card
-                // Add the elements to the product card
-                productCard.add(productImageLabel);
-                productCard.add(Box.createRigidArea(new Dimension(0, 5)));  // Adjust spacing
-                productCard.add(productNameLabel);
-                productCard.add(Box.createRigidArea(new Dimension(0, 5)));
-                productCard.add(productPriceLabel);
-                productCard.add(Box.createRigidArea(new Dimension(0, 5)));
-                productCard.add(productQtyLabel);
-                productCard.add(Box.createRigidArea(new Dimension(0, 5)));
-                productCard.add(productTotalPriceLabel);
-
-                // Add the product card to the product card panel
+                
+                addProductDetail(productCard, "Stock: " + product.getInteger("stockQuantity"));
+                
                 productCardPanel.add(productCard);
             }
 
-            // Make the product cards scrollable
-            JScrollPane scrollableProductPanel = new JScrollPane(productCardPanel);
-            scrollableProductPanel.setPreferredSize(new Dimension(800, 400));  // Adjust the scroll pane size
-
-            // Add the scrollable product panel to the stats panel
-            statsPanel.add(scrollableProductPanel);
+            JScrollPane scrollPane = new JScrollPane(productCardPanel);
+            scrollPane.setPreferredSize(new Dimension(contentPanel.getWidth(), 400));
+            statsPanel.add(scrollPane);
 
         } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error retrieving product stats.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error retrieving stats: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
 
-        // Add the stats panel to the content area
         contentPanel.add(statsPanel);
-
-        // Revalidate and repaint to reflect the changes
         contentPanel.revalidate();
         contentPanel.repaint();
+    }
+
+    // Helper method to add product details
+    private void addProductDetail(JPanel panel, String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        label.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panel.add(label);
+        panel.add(Box.createRigidArea(new Dimension(0, 3)));
+    }
+
+    // Updated loadProductImage method
+    private ImageIcon loadProductImage(String imageUrl) {
+        try {
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                Image image = ImageIO.read(new URL(imageUrl));
+                return new ImageIcon(image.getScaledInstance(100, 100, Image.SCALE_SMOOTH));
+            }
+        } catch (Exception e) {
+            System.out.println("Error loading image: " + e.getMessage());
+        }
+        return new ImageIcon(new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB)); // Blank image
     }
 
     private JPanel createMetricBox(String title, String value, Color color) {
@@ -428,8 +411,9 @@ public class ProductRegistration extends JFrame {
 }
 
 class ProductRegistrationPanel extends JPanel {
-    private JTextField txtBarcode, txtProductName, txtRatePerPiece, txtStockQuantity;
+    private JTextField txtBarcode, txtProductName, txtStockQuantity, txtPurchasePrice, txtSalesPrice, txtGrams;
     private JComboBox<String> cmbCategory;
+    private JPanel dynamicFieldsPanel;
     private String productImagePath = "";
     private String loggedInUsername;
     private Color backgroundColor = new Color(241, 242, 246); // Light gray
@@ -437,10 +421,14 @@ class ProductRegistrationPanel extends JPanel {
     private Cloudinary cloudinary;
 
     public ProductRegistrationPanel(String username, String firstName, String lastName) {
-        // Update logged in user display
-        JLabel lblLoggedInUser = new JLabel("Logged in as: " + firstName + " " + lastName + " (" + username + ")");
-        lblLoggedInUser.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblLoggedInUser.setForeground(new Color(100, 100, 100));
+        this.loggedInUsername = username;
+
+        // Initialize Cloudinary
+        Map<String, String> config = new HashMap<>();
+        config.put("cloud_name", "dkcxniwte");
+        config.put("api_key", "872993699858565");
+        config.put("api_secret", "qWa0j2TzlDi7gITYZpaQbwkYKGg");
+        cloudinary = new Cloudinary(config);
 
         // Form Panel
         JPanel formPanel = new JPanel(new GridBagLayout());
@@ -449,13 +437,6 @@ class ProductRegistrationPanel extends JPanel {
                 BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
                 BorderFactory.createEmptyBorder(30, 40, 30, 40)
         ));
-        
-     // Initialize Cloudinary (Replace with your credentials)
-        Map<String, String> config = new HashMap<>();
-        config.put("cloud_name", "dkcxniwte");
-        config.put("api_key", "872993699858565");
-        config.put("api_secret", "qWa0j2TzlDi7gITYZpaQbwkYKGg");
-        cloudinary = new Cloudinary(config);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(12, 15, 12, 15);
@@ -467,25 +448,18 @@ class ProductRegistrationPanel extends JPanel {
         headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         headerLabel.setForeground(new Color(40, 58, 82)); // Dark blue
 
-        // User info
-//        JLabel lblLoggedInUser1 = new JLabel("Logged in as: " + loggedInUsername);
-//        lblLoggedInUser1.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-//        lblLoggedInUser1.setForeground(new Color(100, 100, 100)); // Gray
-
         // Form components
         JLabel lblBarcode = createFormLabel("Barcode:");
         JLabel lblProductName = createFormLabel("Product Name:");
         JLabel lblCategory = createFormLabel("Category:");
-        JLabel lblRatePerPiece = createFormLabel("Rate per Piece:");
         JLabel lblStockQuantity = createFormLabel("Stock Quantity:");
         JLabel lblProductImage = createFormLabel("Product Image:");
 
         txtBarcode = createFormTextField(20);
         txtProductName = createFormTextField(20);
-        txtRatePerPiece = createFormTextField(20);
         txtStockQuantity = createFormTextField(20);
 
-        cmbCategory = new JComboBox<>(new String[]{"Gold", "Silver", "Platinum"});
+        cmbCategory = new JComboBox<>(new String[]{"Emetation", "Gold", "Silver"});
         cmbCategory.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         cmbCategory.setBackground(Color.WHITE);
         cmbCategory.setBorder(BorderFactory.createCompoundBorder(
@@ -493,6 +467,26 @@ class ProductRegistrationPanel extends JPanel {
                 BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
 
+        // Initialize dynamic fields panels
+        dynamicFieldsPanel = new JPanel(new CardLayout());
+        JPanel emetationPanel = createEmetationPanel();
+        JPanel goldSilverPanel = createGoldSilverPanel();
+
+        dynamicFieldsPanel.add(emetationPanel, "Emetation");
+        dynamicFieldsPanel.add(goldSilverPanel, "GoldSilver");
+
+        // Add category change listener
+        cmbCategory.addItemListener(e -> {
+            String category = (String) cmbCategory.getSelectedItem();
+            CardLayout cl = (CardLayout) dynamicFieldsPanel.getLayout();
+            if ("Emetation".equals(category)) {
+                cl.show(dynamicFieldsPanel, "Emetation");
+            } else {
+                cl.show(dynamicFieldsPanel, "GoldSilver");
+            }
+        });
+
+        // Buttons
         JButton btnUploadImage = createActionButton("Upload Image", new Color(52, 152, 219)); // Blue
         JButton btnRegister = createActionButton("Register Product", new Color(46, 204, 113)); // Green
         JButton btnClear = createActionButton("Clear", new Color(231, 76, 60)); // Red
@@ -503,47 +497,44 @@ class ProductRegistrationPanel extends JPanel {
         gbc.gridy = 0;
         formPanel.add(headerLabel, gbc);
 
-//        gbc.gridy = 1;
-//        formPanel.add(lblLoggedInUser1, gbc);
-
         gbc.gridwidth = 1;
-        gbc.gridy = 2;
+        gbc.gridy = 1;
         formPanel.add(lblBarcode, gbc);
         gbc.gridx = 1;
         formPanel.add(txtBarcode, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 2;
         formPanel.add(lblProductName, gbc);
         gbc.gridx = 1;
         formPanel.add(txtProductName, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = 3;
         formPanel.add(lblCategory, gbc);
         gbc.gridx = 1;
         formPanel.add(cmbCategory, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 5;
-        formPanel.add(lblRatePerPiece, gbc);
-        gbc.gridx = 1;
-        formPanel.add(txtRatePerPiece, gbc);
+        gbc.gridy = 4;
+        gbc.gridwidth = 2;
+        formPanel.add(dynamicFieldsPanel, gbc);
+        gbc.gridwidth = 1;
 
         gbc.gridx = 0;
-        gbc.gridy = 6;
+        gbc.gridy = 5;
         formPanel.add(lblStockQuantity, gbc);
         gbc.gridx = 1;
         formPanel.add(txtStockQuantity, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 7;
+        gbc.gridy = 6;
         formPanel.add(lblProductImage, gbc);
         gbc.gridx = 1;
         formPanel.add(btnUploadImage, gbc);
 
         gbc.gridx = 0;
-        gbc.gridy = 8;
+        gbc.gridy = 7;
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
@@ -555,9 +546,36 @@ class ProductRegistrationPanel extends JPanel {
 
         add(formPanel);
 
+        // Button Actions
         btnRegister.addActionListener(e -> registerProduct());
         btnUploadImage.addActionListener(e -> uploadImage());
         btnClear.addActionListener(e -> clearFields());
+    }
+
+    private JPanel createEmetationPanel() {
+        JPanel panel = new JPanel(new GridLayout(2, 2, 5, 5));
+        panel.setBackground(formColor);
+
+        txtPurchasePrice = createFormTextField(10);
+        txtSalesPrice = createFormTextField(10);
+
+        panel.add(createFormLabel("Purchase Price:"));
+        panel.add(txtPurchasePrice);
+        panel.add(createFormLabel("Sales Price:"));
+        panel.add(txtSalesPrice);
+
+        return panel;
+    }
+
+    private JPanel createGoldSilverPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        panel.setBackground(formColor);
+
+        txtGrams = createFormTextField(10);
+        panel.add(createFormLabel("Grams:"));
+        panel.add(txtGrams);
+
+        return panel;
     }
 
     private JLabel createFormLabel(String text) {
@@ -614,26 +632,39 @@ class ProductRegistrationPanel extends JPanel {
             String barcode = txtBarcode.getText().trim();
             String productName = txtProductName.getText().trim();
             String category = (String) cmbCategory.getSelectedItem();
-            String rateText = txtRatePerPiece.getText().trim();
             String quantityText = txtStockQuantity.getText().trim();
+            double purchasePrice = 0, salesPrice = 0, grams = 0;
 
             // Validation
-            if (barcode.isEmpty() || productName.isEmpty() || rateText.isEmpty() || quantityText.isEmpty()) {
+            if (barcode.isEmpty() || productName.isEmpty()  || quantityText.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "All fields are required!", "Validation Error", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            double ratePerPiece;
             int stockQuantity;
             try {
-                ratePerPiece = Double.parseDouble(rateText);
                 stockQuantity = Integer.parseInt(quantityText);
             } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(this, "Invalid numerical values!", "Input Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            System.out.println("Proceeding with product registration..."); // Debugging line
+            if ("Emetation".equals(category)) {
+                try {
+                    purchasePrice = Double.parseDouble(txtPurchasePrice.getText().trim());
+                    salesPrice = Double.parseDouble(txtSalesPrice.getText().trim());
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(this, "Invalid price values!", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            } else {
+                try {
+                    grams = Double.parseDouble(txtGrams.getText().trim());
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(this, "Invalid grams value!", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
 
             // MongoDB connection
             try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
@@ -646,13 +677,15 @@ class ProductRegistrationPanel extends JPanel {
                 }
 
                 Document product = new Document()
-                    .append("barcode", barcode)
-                    .append("productName", productName)
-                    .append("category", category)
-                    .append("ratePerPiece", ratePerPiece)
-                    .append("stockQuantity", stockQuantity)
-                    .append("productImagePath", productImagePath)  // ✅ Image uploaded before reaching here
-                    .append("createdAt", new java.util.Date());
+                        .append("barcode", barcode)
+                        .append("productName", productName)
+                        .append("category", category)
+                        .append("purchasePrice", purchasePrice)
+                        .append("salesPrice", salesPrice)
+                        .append("grams", grams)
+                        .append("stockQuantity", stockQuantity)
+                        .append("productImagePath", productImagePath)
+                        .append("createdAt", new java.util.Date());
 
                 productCollection.insertOne(product);
 
@@ -706,9 +739,11 @@ class ProductRegistrationPanel extends JPanel {
     private void clearFields() {
         txtBarcode.setText("");
         txtProductName.setText("");
-        txtRatePerPiece.setText("");
         txtStockQuantity.setText("");
         cmbCategory.setSelectedIndex(0);
+        txtPurchasePrice.setText("");
+        txtSalesPrice.setText("");
+        txtGrams.setText("");
         productImagePath = ""; // ✅ Reset the image path
     }
 

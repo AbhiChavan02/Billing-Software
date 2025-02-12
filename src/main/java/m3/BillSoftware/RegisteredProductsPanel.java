@@ -5,18 +5,19 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.DeleteResult;
-
 import org.bson.Document;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
-
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.net.URL;
 import java.util.Objects;
 
 public class RegisteredProductsPanel extends JPanel {
@@ -34,15 +35,13 @@ public class RegisteredProductsPanel extends JPanel {
         createUI();
         loadProductData();
     }
-    
 
-
- // In your ImageCellRenderer:
+    // Image renderer for displaying product images in the table
     private class ImageCellRenderer extends JLabel implements TableCellRenderer {
-        private final int IMAGE_SIZE = 60;  // Set the size of the image (60x60 pixels)
+        private final int IMAGE_SIZE = 60; // Set the size of the image (60x60 pixels)
 
         public ImageCellRenderer() {
-            setHorizontalAlignment(JLabel.CENTER);  // Center-align the image
+            setHorizontalAlignment(JLabel.CENTER); // Center-align the image
         }
 
         @Override
@@ -51,20 +50,21 @@ public class RegisteredProductsPanel extends JPanel {
                 ImageIcon icon = (ImageIcon) value;
                 // Scale the image to a square shape with fixed width and height
                 Image img = icon.getImage().getScaledInstance(IMAGE_SIZE, IMAGE_SIZE, Image.SCALE_SMOOTH);
-                setIcon(new ImageIcon(img));  // Set the resized image
+                setIcon(new ImageIcon(img)); // Set the resized image
             } else {
-                setIcon(null);  // In case the value is not an ImageIcon
+                setIcon(null); // In case the value is not an ImageIcon
             }
             return this;
         }
     }
-    
+
+ // In ButtonCellRenderer class - ALWAYS SHOW BUTTONS
     private class ButtonCellRenderer extends JPanel implements TableCellRenderer {
         private JButton updateButton;
         private JButton deleteButton;
 
         public ButtonCellRenderer() {
-            setLayout(new GridBagLayout()); // Use GridBagLayout for centering
+            setLayout(new GridBagLayout());
             setOpaque(true);
 
             updateButton = new JButton("Update");
@@ -75,7 +75,7 @@ public class RegisteredProductsPanel extends JPanel {
             updateButton.setForeground(Color.WHITE);
             deleteButton.setForeground(Color.WHITE);
 
-            // Add buttons to the panel with constraints for centering
+            // Add buttons to the panel
             GridBagConstraints gbc = new GridBagConstraints();
             gbc.gridx = 0;
             gbc.gridy = 0;
@@ -87,12 +87,13 @@ public class RegisteredProductsPanel extends JPanel {
         }
 
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                boolean isSelected, boolean hasFocus, int row, int column) {
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            // Always show buttons
             return this;
         }
     }
 
+ // In ButtonCellEditor class - ALWAYS SHOW BUTTONS
     private class ButtonCellEditor extends AbstractCellEditor implements TableCellEditor, ActionListener {
         private JPanel panel;
         private JButton updateButton;
@@ -100,7 +101,7 @@ public class RegisteredProductsPanel extends JPanel {
         private int currentRow;
 
         public ButtonCellEditor() {
-            panel = new JPanel(new GridBagLayout()); // Use GridBagLayout for centering
+            panel = new JPanel(new GridBagLayout());
 
             updateButton = new JButton("Update");
             deleteButton = new JButton("Delete");
@@ -113,7 +114,7 @@ public class RegisteredProductsPanel extends JPanel {
             updateButton.addActionListener(this);
             deleteButton.addActionListener(this);
 
-            // Add buttons to the panel with constraints for centering
+            // Add buttons to the panel
             GridBagConstraints gbc = new GridBagConstraints();
             gbc.gridx = 0;
             gbc.gridy = 0;
@@ -125,10 +126,9 @@ public class RegisteredProductsPanel extends JPanel {
         }
 
         @Override
-        public Component getTableCellEditorComponent(JTable table, Object value,
-                boolean isSelected, int row, int column) {
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
             currentRow = row;
-            return panel;
+            return panel; // Always show buttons
         }
 
         @Override
@@ -147,26 +147,36 @@ public class RegisteredProductsPanel extends JPanel {
         }
     }
 
-
-
-
+    // Initialize the UI components
     private void createUI() {
-        // Initialize table model and set it to product table
-    	// Add a new column for Action (Update, Delete)
-    	tableModel = new DefaultTableModel(new Object[]{"Barcode", "Product Name", "Image", "Category", "Rate Per Piece", "Stock Quantity", "Actions"}, 0);
+        // Initialize table model with columns
+        tableModel = new DefaultTableModel(
+                new Object[]{"Barcode", "Product Name", "Image", "Category", "Purchase Price", "Sales Price", "Grams", "Stock Quantity", "Actions"}, 0);
 
         productTable = new JTable(tableModel);
-//        productTable.	setRowHeight(25); // Set row height for better readability
         productTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         productTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
-        
-        // In your createUI method:
-        productTable.setRowHeight(100);  // Increase row height to display larger images
-        productTable.getColumnModel().getColumn(2).setPreferredWidth(150);  // Set width for the image column
-     // Set custom renderer for the Action column (column index 6)
-        productTable.getColumnModel().getColumn(6).setCellRenderer(new ButtonCellRenderer());
-        productTable.getColumnModel().getColumn(6).setCellEditor(new ButtonCellEditor());
+        productTable.setRowHeight(100); // Increase row height to display larger images
 
+     // In createUI() - COLUMN WIDTH SETTINGS
+        productTable.getColumnModel().getColumn(0).setPreferredWidth(80);  // Barcode
+        productTable.getColumnModel().getColumn(2).setPreferredWidth(80);  // Image
+        productTable.getColumnModel().getColumn(8).setPreferredWidth(150); // Actions
+
+     // In createUI() method - CORRECTED COLUMN INDEX FOR ACTIONS
+        productTable.getColumnModel().getColumn(8).setCellRenderer(new ButtonCellRenderer()); // Index 8 for Actions column
+        productTable.getColumnModel().getColumn(8).setCellEditor(new ButtonCellEditor());
+        productTable.getColumnModel().getColumn(8).setPreferredWidth(150); // Wider for buttons
+
+        // Center-align all columns
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int i = 0; i < productTable.getColumnCount(); i++) {
+            productTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
+        // Set image renderer for column 2 (Image)
+        productTable.getColumnModel().getColumn(2).setCellRenderer(new ImageCellRenderer());
 
         // Initialize buttons
         btnUpdate = createActionButton("Update", new Color(52, 152, 219)); // Blue
@@ -177,7 +187,7 @@ public class RegisteredProductsPanel extends JPanel {
         // Initialize search components
         txtSearch = new JTextField(15);
         txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        searchCriteria = new JComboBox<>(new String[]{"Barcode", "Product Name","Image", "Category", "Rate Per Piece", "Stock Quantity"});
+        searchCriteria = new JComboBox<>(new String[]{"Barcode", "Product Name", "Category", "Purchase Price", "Sales Price", "Grams", "Stock Quantity"});
         searchCriteria.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
         // Add action listeners for buttons
@@ -211,15 +221,14 @@ public class RegisteredProductsPanel extends JPanel {
         searchPanel.add(txtSearch);
         searchPanel.add(searchCriteria);
         searchPanel.add(btnSearch);
-//        searchPanel.add(btnUpdate);
         searchPanel.add(btnRefresh);
-//        searchPanel.add(btnDelete);
 
         // Add components to the main panel
         add(searchPanel, BorderLayout.NORTH);
         add(new JScrollPane(productTable), BorderLayout.CENTER);
     }
 
+    // Helper method to create styled buttons
     private JButton createActionButton(String text, Color bgColor) {
         JButton btn = new JButton(text);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -242,128 +251,97 @@ public class RegisteredProductsPanel extends JPanel {
         return btn;
     }
 
+    // Load product data from MongoDB
     private void loadProductData() {
         try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> productCollection = database.getCollection("Product");
 
-            tableModel.setRowCount(0);  // Clear existing rows
+            tableModel.setRowCount(0); // Clear existing rows
 
             for (Document product : productCollection.find()) {
-                // Safely get fields and handle unexpected types
                 String barcode = getStringFromDocument(product, "barcode");
                 String productName = getStringFromDocument(product, "productName");
                 String category = getStringFromDocument(product, "category");
 
-                // Safely retrieve ratePerPiece and stockQuantity
-                Object ratePerPieceObj = product.get("ratePerPiece");
-                Double ratePerPiece = ratePerPieceObj instanceof Double ? (Double) ratePerPieceObj :
-                        ratePerPieceObj instanceof Integer ? ((Integer) ratePerPieceObj).doubleValue() : 0.0;
+                // Fetch fields based on category
+                Double purchasePrice = null;
+                Double salesPrice = null;
+                Double grams = null;
 
-                Object stockQuantityObj = product.get("stockQuantity");
-                Integer stockQuantity = stockQuantityObj instanceof Integer ? (Integer) stockQuantityObj : 0;
+                if ("Emetation".equals(category)) {
+                    purchasePrice = product.getDouble("purchasePrice");
+                    salesPrice = product.getDouble("salesPrice");
+                } else {
+                    grams = product.getDouble("grams");
+                }
 
+                Integer stockQuantity = product.getInteger("stockQuantity");
                 String imageUrl = product.getString("productImagePath");
-
-                // Load Image from Cloudinary (or set default if missing)
                 ImageIcon productImage = loadProductImage(imageUrl);
 
-                // Add a row with the data, including the buttons column
                 tableModel.addRow(new Object[]{
                         barcode != null ? barcode : "N/A",
                         productName != null ? productName : "N/A",
                         productImage,
                         category != null ? category : "N/A",
-                        ratePerPiece != null ? ratePerPiece : 0.0,
+                        purchasePrice,
+                        salesPrice,
+                        grams,
                         stockQuantity != null ? stockQuantity : 0,
-                        ""  // Action column (button)
+                        ""  // Action column
                 });
             }
 
-            // Set custom renderer for the image column (column index 2)
-            productTable.getColumnModel().getColumn(2).setCellRenderer(new ImageCellRenderer());
+            // Set custom renderers for numeric columns
+            DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
+                @Override
+                public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                    super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                    setHorizontalAlignment(SwingConstants.CENTER);
+                    if (value == null) {
+                        setText("N/A");
+                    } else if (value instanceof Double) {
+                        switch (column) {
+                            case 4: // Purchase Price
+                            case 5: // Sales Price
+                                setText(String.format("₹%.2f", value));
+                                break;
+                            case 6: // Grams
+                                setText(String.format("%.2f g", value));
+                                break;
+                        }
+                    }
+                    return this;
+                }
+            };
 
-            // Center the text in the columns (barcode, productName, category, ratePerPiece, stockQuantity)
-            DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-            centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-
-            // Apply to the relevant columns (0 - barcode, 1 - productName, 3 - category, 4 - ratePerPiece, 5 - stockQuantity)
-            productTable.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
-            productTable.getColumnModel().getColumn(1).setCellRenderer(centerRenderer);
-            productTable.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
-            productTable.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
-            productTable.getColumnModel().getColumn(5).setCellRenderer(centerRenderer);
-
-            // Apply custom renderer for the Action column (button) at index 6 (center the button if needed)
-            productTable.getColumnModel().getColumn(6).setCellRenderer(new ButtonCellRenderer());
+            // Apply to columns 4-7
+            for (int i = 4; i <= 7; i++) {
+                productTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+            }
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error loading product data: " + e.getMessage());
         }
     }
 
-
-
-
-    private Object createDeleteButton(String barcode) {
-    	JButton deleteButton = new JButton("Delete");
-        deleteButton.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        deleteButton.setForeground(Color.WHITE);
-        deleteButton.setBackground(new Color(231, 76, 60)); // Red color
-        deleteButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        deleteButton.addActionListener(e -> {
-            System.out.println("Delete button clicked");  // For debugging
-            int row = findRowByBarcode(barcode);
-            if (row != -1) {
-                deleteProductData(row);
+ // In loadProductImage() - PROPER IMAGE HANDLING
+    private ImageIcon loadProductImage(String imageUrl) {
+        try {
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                BufferedImage image = ImageIO.read(new URL(imageUrl));
+                return new ImageIcon(image.getScaledInstance(60, 60, Image.SCALE_SMOOTH));
             }
-        });
-
-
-        return deleteButton;
-	}
-
-	private Object createUpdateButton(String barcode) {
-		JButton updateButton = new JButton("Update");
-	    updateButton.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-	    updateButton.setForeground(Color.WHITE);
-	    updateButton.setBackground(new Color(52, 152, 219)); // Blue color
-	    updateButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-	    
-	    updateButton.addActionListener(e -> {
-	    	System.out.println("Update button clicked");
-	        int row = findRowByBarcode(barcode);
-	        if (row != -1) {
-	            updateProductData(row);  // Call the update method for the selected row
-	        }
-	    });
-
-	    return updateButton;
-	}
-
-	private int findRowByBarcode(String barcode) {
-	    for (int i = 0; i < tableModel.getRowCount(); i++) {
-	        if (tableModel.getValueAt(i, 0).equals(barcode)) {
-	            System.out.println("Found row: " + i);  // For debugging
-	            return i;
-	        }
-	    }
-	    System.out.println("Barcode not found: " + barcode);  // For debugging
-	    return -1;
-	}
-
-
-	private String getStringFromDocument(Document product, String key) {
-        Object value = product.get(key);
-        if (value instanceof String) {
-            return (String) value;
-        } else if (value instanceof Integer) {
-            return String.valueOf(value);  // Convert Integer to String
+        } catch (Exception e) {
+            System.out.println("Error loading image: " + e.getMessage());
+            // Return blank image
+            return new ImageIcon(new BufferedImage(60, 60, BufferedImage.TYPE_INT_ARGB));
         }
-        return "";  // Return empty string if value is neither String nor Integer
+        return new ImageIcon(); // Return empty if no URL
     }
 
+    // Handle search functionality
     private void handleSearch() {
         String searchValue = txtSearch.getText().trim();
         String criteria = (String) Objects.requireNonNull(searchCriteria.getSelectedItem());
@@ -388,19 +366,35 @@ public class RegisteredProductsPanel extends JPanel {
                 case "Category":
                     query.append("category", new Document("$regex", searchValue).append("$options", "i"));
                     break;
-                case "Rate Per Piece":
+                case "Purchase Price":
                     try {
-                        query.append("ratePerPiece", Double.parseDouble(searchValue)); // Ensure numeric input
+                        query.append("purchasePrice", Double.parseDouble(searchValue));
                     } catch (NumberFormatException e) {
-                        JOptionPane.showMessageDialog(this, "Invalid input for Rate Per Piece. Please enter a valid number.");
+                        JOptionPane.showMessageDialog(this, "Invalid input for Purchase Price.");
+                        return;
+                    }
+                    break;
+                case "Sales Price":
+                    try {
+                        query.append("salesPrice", Double.parseDouble(searchValue));
+                    } catch (NumberFormatException e) {
+                        JOptionPane.showMessageDialog(this, "Invalid input for Sales Price.");
+                        return;
+                    }
+                    break;
+                case "Grams":
+                    try {
+                        query.append("grams", Double.parseDouble(searchValue));
+                    } catch (NumberFormatException e) {
+                        JOptionPane.showMessageDialog(this, "Invalid input for Grams.");
                         return;
                     }
                     break;
                 case "Stock Quantity":
                     try {
-                        query.append("stockQuantity", Integer.parseInt(searchValue)); // Ensure numeric input
+                        query.append("stockQuantity", Integer.parseInt(searchValue));
                     } catch (NumberFormatException e) {
-                        JOptionPane.showMessageDialog(this, "Invalid input for Stock Quantity. Please enter a valid number.");
+                        JOptionPane.showMessageDialog(this, "Invalid input for Stock Quantity.");
                         return;
                     }
                     break;
@@ -414,27 +408,31 @@ public class RegisteredProductsPanel extends JPanel {
                 String productName = getStringFromDocument(product, "productName");
                 String category = getStringFromDocument(product, "category");
 
-                // Log the raw data before processing
-                System.out.println("Raw Data: " + product.toJson());
+                Double purchasePrice = null;
+                Double salesPrice = null;
+                Double grams = null;
 
-                // Safely retrieve ratePerPiece and stockQuantity
-                Object ratePerPieceObj = product.get("ratePerPiece");
-                Double ratePerPiece = ratePerPieceObj instanceof Double ? (Double) ratePerPieceObj :
-                    ratePerPieceObj instanceof Integer ? ((Integer) ratePerPieceObj).doubleValue() : 0.0;
+                if ("Emetation".equals(category)) {
+                    purchasePrice = product.getDouble("purchasePrice");
+                    salesPrice = product.getDouble("salesPrice");
+                } else {
+                    grams = product.getDouble("grams");
+                }
 
-                Object stockQuantityObj = product.get("stockQuantity");
-                Integer stockQuantity = stockQuantityObj instanceof Integer ? (Integer) stockQuantityObj : 0;
-
-                // Log the processed data
-                System.out.println("Processed Values - Rate Per Piece: " + ratePerPiece + ", Stock Quantity: " + stockQuantity);
+                Integer stockQuantity = product.getInteger("stockQuantity");
+                String imageUrl = product.getString("productImagePath");
+                ImageIcon productImage = loadProductImage(imageUrl);
 
                 tableModel.addRow(new Object[]{
-                    barcode != null ? barcode : "N/A",
-                    productName != null ? productName : "N/A",
-                    loadProductImage(product.getString("productImagePath")), // IMAGE COLUMN
-                    category != null ? category : "N/A",
-                    ratePerPiece != null ? ratePerPiece : 0.0, // Handle ratePerPiece as Double
-                    stockQuantity != null ? stockQuantity : 0
+                        barcode != null ? barcode : "N/A",
+                        productName != null ? productName : "N/A",
+                        productImage,
+                        category != null ? category : "N/A",
+                        purchasePrice,
+                        salesPrice,
+                        grams,
+                        stockQuantity != null ? stockQuantity : 0,
+                        ""  // Action column
                 });
             }
 
@@ -446,29 +444,7 @@ public class RegisteredProductsPanel extends JPanel {
         }
     }
 
-
-
-
-    private ImageIcon loadProductImage(String imageUrl) {
-        try {
-            if (imageUrl != null && !imageUrl.isEmpty()) {
-                // Load image from Cloudinary URL
-                Image image = new ImageIcon(new java.net.URL(imageUrl)).getImage();
-
-                // Resize image to fit in the table cell (you can adjust the size as needed)
-                Image scaledImage = image.getScaledInstance(60, 60, Image.SCALE_SMOOTH);
-                return new ImageIcon(scaledImage);
-            }
-        } catch (Exception e) {
-            System.out.println("Error loading image: " + e.getMessage());
-        }
-
-        // Return a default placeholder image if image fails to load
-        return new ImageIcon(new ImageIcon("default-placeholder.png").getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH));
-    }
-
-
-
+    // Update product data
     private void updateProductData(int rowIndex) {
         try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
@@ -478,8 +454,10 @@ public class RegisteredProductsPanel extends JPanel {
             String barcode = (String) tableModel.getValueAt(rowIndex, 0); // Barcode
             String productName = (String) tableModel.getValueAt(rowIndex, 1); // Product Name
             String category = (String) tableModel.getValueAt(rowIndex, 3); // Category
-            double ratePerPiece = (Double) tableModel.getValueAt(rowIndex, 4); // Rate Per Piece
-            int stockQuantity = (Integer) tableModel.getValueAt(rowIndex, 5); // Stock Quantity
+            Double purchasePrice = (Double) tableModel.getValueAt(rowIndex, 4); // Purchase Price
+            Double salesPrice = (Double) tableModel.getValueAt(rowIndex, 5); // Sales Price
+            Double grams = (Double) tableModel.getValueAt(rowIndex, 6); // Grams
+            int stockQuantity = (Integer) tableModel.getValueAt(rowIndex, 7); // Stock Quantity
 
             // Ask the user to edit the product details
             String newProductName = JOptionPane.showInputDialog(this, "Enter new product name:", productName);
@@ -492,55 +470,59 @@ public class RegisteredProductsPanel extends JPanel {
                 newCategory = category;
             }
 
-            String newRatePerPieceStr = JOptionPane.showInputDialog(this, "Enter new rate per piece:", ratePerPiece);
-            if (newRatePerPieceStr == null || newRatePerPieceStr.isEmpty()) {
-                newRatePerPieceStr = String.valueOf(ratePerPiece);
+            // Category-specific fields
+            Double newPurchasePrice = null;
+            Double newSalesPrice = null;
+            Double newGrams = null;
+
+            if ("Emetation".equalsIgnoreCase(newCategory)) {
+                String purchaseStr = JOptionPane.showInputDialog(this, "Enter new purchase price:", purchasePrice);
+                String salesStr = JOptionPane.showInputDialog(this, "Enter new sales price:", salesPrice);
+                newPurchasePrice = Double.parseDouble(purchaseStr);
+                newSalesPrice = Double.parseDouble(salesStr);
+            } else {
+                String gramsStr = JOptionPane.showInputDialog(this, "Enter new grams:", grams);
+                newGrams = Double.parseDouble(gramsStr);
             }
 
-            String newStockQuantityStr = JOptionPane.showInputDialog(this, "Enter new stock quantity:", stockQuantity);
-            if (newStockQuantityStr == null || newStockQuantityStr.isEmpty()) {
-                newStockQuantityStr = String.valueOf(stockQuantity);
-            }
+            // Stock quantity (common)
+            String stockStr = JOptionPane.showInputDialog(this, "Enter new stock quantity:", stockQuantity);
+            int newStock = Integer.parseInt(stockStr);
 
-            try {
-                // Parse the new values
-                double newRatePerPiece = Double.parseDouble(newRatePerPieceStr);
-                int newStockQuantity = Integer.parseInt(newStockQuantityStr);
+            // Update the table model with the new values
+            tableModel.setValueAt(newProductName, rowIndex, 1);
+            tableModel.setValueAt(newCategory, rowIndex, 3);
+            tableModel.setValueAt(newPurchasePrice, rowIndex, 4);
+            tableModel.setValueAt(newSalesPrice, rowIndex, 5);
+            tableModel.setValueAt(newGrams, rowIndex, 6);
+            tableModel.setValueAt(newStock, rowIndex, 7);
 
-                // Update the table model with the new values
-                tableModel.setValueAt(newProductName, rowIndex, 1);
-                tableModel.setValueAt(newCategory, rowIndex, 3);
-                tableModel.setValueAt(newRatePerPiece, rowIndex, 4);
-                tableModel.setValueAt(newStockQuantity, rowIndex, 5);
+            // Create the filter for finding the product in the database
+            Document filter = new Document("barcode", barcode);
+            Document updatedProduct = new Document()
+                    .append("productName", newProductName)
+                    .append("category", newCategory)
+                    .append("purchasePrice", newPurchasePrice)
+                    .append("salesPrice", newSalesPrice)
+                    .append("grams", newGrams)
+                    .append("stockQuantity", newStock);
 
-                // Create the filter for finding the product in the database
-                Document filter = new Document("barcode", barcode);
-                Document updatedProduct = new Document()
-                        .append("productName", newProductName)
-                        .append("category", newCategory)
-                        .append("ratePerPiece", newRatePerPiece)
-                        .append("stockQuantity", newStockQuantity);
+            // Perform the update operation in the database
+            productCollection.updateOne(filter, new Document("$set", updatedProduct));
 
-                // Perform the update operation in the database
-                productCollection.updateOne(filter, new Document("$set", updatedProduct));
+            // Show confirmation message
+            JOptionPane.showMessageDialog(this, "Product updated successfully!");
 
-                // Show confirmation message
-                JOptionPane.showMessageDialog(this, "Product updated successfully!");
+            // Reload the table with updated data from the database
+            loadProductData();
 
-                // Reload the table with updated data from the database
-                loadProductData();
-
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Invalid input. Please enter valid numbers.");
-            }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error updating product data: " + e.getMessage());
             e.printStackTrace(); // Print stack trace for debugging
         }
     }
 
-
-
+    // Delete product data
     private void deleteProductData(int rowIndex) {
         try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
@@ -555,9 +537,6 @@ public class RegisteredProductsPanel extends JPanel {
 
             // Create the filter for finding the product in the database
             Document filter = new Document("barcode", barcode);
-
-            // Debugging: Print the filter to verify
-            System.out.println("Deleting product with filter: " + filter.toJson());
 
             // Perform the delete operation in the database
             DeleteResult result = productCollection.deleteOne(filter);
@@ -579,4 +558,14 @@ public class RegisteredProductsPanel extends JPanel {
         }
     }
 
+    // Helper method to safely get a string from a MongoDB document
+    private String getStringFromDocument(Document product, String key) {
+        Object value = product.get(key);
+        if (value instanceof String) {
+            return (String) value;
+        } else if (value instanceof Integer) {
+            return String.valueOf(value); // Convert Integer to String
+        }
+        return ""; // Return empty string if value is neither String nor Integer
+    }
 }
