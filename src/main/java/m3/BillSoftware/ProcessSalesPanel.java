@@ -18,13 +18,21 @@ import com.itextpdf.text.*;
 import com.itextpdf.text.Font;
 import com.mongodb.client.*;
 
+import javax.swing.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+
 
 
 public class ProcessSalesPanel extends JPanel {
-    private JTextField txtBarcode, txtProductName, txtPricePerGram, txtQuantity, txtTotalPrice, txtStockQuantity, txtName, txtFinalPrice;
+	
+    private JTextField txtBarcode, txtProductName, txtPricePerGram,txtCurrentGoldRate, txtQuantity, txtTotalPrice, txtName, txtFinalPrice;
     private JButton btnProcessSale, btnClear, btnRefresh;
     private Color backgroundColor = new Color(241, 242, 246); // Light gray background
     private Color formColor = Color.WHITE; // White for form background
+    private Double Totalprice;
+    private JLabel goldRateLabel, RateLabel, gstLabel, makingChargesLabel,totalLabel, lblGstAmount, lblMakingCharges,lbltotalamount;
+    double grams = 0.0;
 
     public ProcessSalesPanel() {
         setLayout(new GridBagLayout());
@@ -33,24 +41,16 @@ public class ProcessSalesPanel extends JPanel {
     }
     
     
-
     private void createForm() {
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(formColor);
         formPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
                 BorderFactory.createEmptyBorder(30, 40, 30, 40)
-        ));	
-        
+        ));
+
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
         String[] fonts = ge.getAvailableFontFamilyNames();
-        for (String font : fonts) {
-            System.out.println(font);
-        }
-     
-
-        
-
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(12, 15, 12, 15);
@@ -69,31 +69,60 @@ public class ProcessSalesPanel extends JPanel {
         txtProductName.setEditable(false);
         txtPricePerGram = createFormTextField(20);
         txtPricePerGram.setEditable(false);
-        txtStockQuantity = createFormTextField(20);
-        txtStockQuantity.setEditable(false);
         txtQuantity = createFormTextField(20);
         txtTotalPrice = createFormTextField(20);
         txtTotalPrice.setEditable(false);
         txtFinalPrice = createFormTextField(20);
- 
+        txtCurrentGoldRate = createFormTextField(20); // New field for current gold rate
         
-     // Add a DocumentListener to the txtQuantity field
-     txtQuantity.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-         @Override
-         public void insertUpdate(javax.swing.event.DocumentEvent e) {
-             updateTotalPrice();  // Recalculate total price when quantity is inserted
-         }
+        
+        // Labels for GST and Making Charges instead of input fields
+        lblGstAmount = new JLabel("0.00");
+        lblGstAmount.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
 
-         @Override
-         public void removeUpdate(javax.swing.event.DocumentEvent e) {
-             updateTotalPrice();  // Recalculate total price when quantity is removed or modified
-         }
+        lblMakingCharges = new JLabel("0.00");
+        lblMakingCharges.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
+        
+        lbltotalamount = new JLabel("0.00");
+        lbltotalamount.setFont(new java.awt.Font("Segoe UI", java.awt.Font.BOLD, 14));
 
-         @Override
-         public void changedUpdate(javax.swing.event.DocumentEvent e) {
-             updateTotalPrice();  // Recalculate total price if there is a change
-         }
-     });
+
+        // Add a DocumentListener to the txtQuantity field
+        txtQuantity.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                updateTotalPrice();  // Recalculate total price when quantity is inserted
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                updateTotalPrice();  // Recalculate total price when quantity is removed or modified
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                updateTotalPrice();  // Recalculate total price if there is a change
+            }
+        });
+        
+     // Add a DocumentListener to the txtCurrentGoldRate field
+        txtCurrentGoldRate.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                updateTotalPriceWithGoldRate();  // Recalculate total price when the gold rate is inserted
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                updateTotalPriceWithGoldRate();  // Recalculate total price when the gold rate is removed or modified
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                updateTotalPriceWithGoldRate();  // Recalculate total price if there is a change
+            }
+        });
+
 
         btnRefresh = createActionButton("Refresh", new Color(52, 152, 219)); // Blue
         btnProcessSale = createActionButton("Process Sale", new Color(46, 204, 113)); // Green
@@ -126,19 +155,19 @@ public class ProcessSalesPanel extends JPanel {
         gbc.gridx = 1;
         formPanel.add(txtProductName, gbc);
 
-        // Price Per Gram Field and Label
+     // Price Per Gram Field and Label
         gbc.gridx = 0;
         gbc.gridy = 4;
-        formPanel.add(createFormLabel("Rate Per Piece:"), gbc);
+
+        // Create the initial label
+        RateLabel = createFormLabel("Rate Per Piece:");
+
+        // Add the initial label to the form panel
+        formPanel.add(RateLabel, gbc);
+
+        // Now set the gridx and gridy for the txtPricePerGram
         gbc.gridx = 1;
         formPanel.add(txtPricePerGram, gbc);
-
-        // Stock Quantity Field and Label
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        formPanel.add(createFormLabel("Stock Quantity:"), gbc);
-        gbc.gridx = 1;
-        formPanel.add(txtStockQuantity, gbc);
 
         // Quantity Field and Label
         gbc.gridx = 0;
@@ -152,19 +181,63 @@ public class ProcessSalesPanel extends JPanel {
         gbc.gridy = 7;
         formPanel.add(createFormLabel("Total Price:"), gbc);
         gbc.gridx = 1;
+        gbc.weightx = 1.0;  // Allow the text field to expand and fill the available width
         formPanel.add(txtTotalPrice, gbc);
         
-     // Final Price Field and Label
+        // Final Price Field and Label
         gbc.gridx = 0;
         gbc.gridy = 8;
         formPanel.add(createFormLabel("Final Price:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtFinalPrice, gbc);
+        
+     // Current Gold Rate Field and Label (New field)
+        goldRateLabel = createFormLabel("Current Gold Rate:"); // Label for current gold rate
+        gbc.gridx = 0;
+        gbc.gridy = 10;
+        formPanel.add(goldRateLabel, gbc);  // Label for current gold rate
+
+        gbc.gridx = 1;
+        formPanel.add(txtCurrentGoldRate, gbc);  // TextField for current gold rate
+        
+        // GST Label
+        gstLabel = createFormLabel("GST Amount:");
+        gbc.gridx = 0;
+        gbc.gridy = 11;
+        formPanel.add(gstLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(lblGstAmount, gbc); // Label instead of text field
+
+        // Making Charges Label
+        makingChargesLabel = createFormLabel("Making Charges:");
+        gbc.gridx = 0;
+        gbc.gridy = 13;
+        formPanel.add(makingChargesLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(lblMakingCharges, gbc); // Label instead of text field
+        
+        // Making Charges Label
+        totalLabel = createFormLabel("Total Amount:");
+        gbc.gridx = 0;
+        gbc.gridy = 14;
+        formPanel.add(totalLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(lbltotalamount, gbc); // Label instead of text field
+        
+        
+
+        // Hide both the label and the text field
+        goldRateLabel.setVisible(false);  // Hide the label
+        txtCurrentGoldRate.setVisible(false);  // Hide the text field
+
+        // Revalidate and repaint to adjust layout
+        formPanel.revalidate();
+        formPanel.repaint();
 
         // Button Panel for Process Sale, Clear
         gbc.gridx = 0;
-        gbc.gridy = 9;
-        gbc.gridwidth = 2;
+        gbc.gridy = 15;
+        gbc.gridwidth = 3;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
@@ -173,13 +246,37 @@ public class ProcessSalesPanel extends JPanel {
         buttonPanel.add(btnClear);
         formPanel.add(buttonPanel, gbc);
 
-        add(formPanel);
+        // Add formPanel to JScrollPane
+        JScrollPane scrollPane = new JScrollPane(formPanel);
+        scrollPane.setPreferredSize(new Dimension(900, 700)); // Set a preferred size for the scrollable area
+        add(scrollPane); // Add scrollPane to the JFrame instead of formPanel directly
 
         // Add action listeners
         btnRefresh.addActionListener(e -> fetchProductDetails());
         btnProcessSale.addActionListener(e -> processSale());
         btnClear.addActionListener(e -> clearFields());
     }
+    private void updateTotalPriceWithGoldRate() {
+        try {
+            // Get the current gold rate entered by the user
+            double currentGoldRate = Double.parseDouble(txtCurrentGoldRate.getText().trim());
+
+            // Get the current total price (product total price) from txtTotalPrice
+            double totalPrice = Double.parseDouble(txtTotalPrice.getText().trim());
+
+            // Calculate the final price by multiplying the total price with the current gold rate
+            double grams =  Double.parseDouble(txtPricePerGram.getText().trim());
+            Totalprice = grams * currentGoldRate;
+
+            // Display the final price in the txtFinalPrice field
+            txtTotalPrice.setText(String.valueOf(Totalprice));
+        } catch (NumberFormatException e) {
+            // Handle invalid input for gold rate or total price
+            txtFinalPrice.setText("Invalid input");
+        }
+    }
+
+
 
     private JPanel createInputPanel(JTextField field, JButton button) {
         JPanel panel = new JPanel(new BorderLayout());
@@ -250,20 +347,7 @@ public class ProcessSalesPanel extends JPanel {
 
     private java.awt.Font getSafeFont(String fontName, int style, int size) {
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        String[] availableFonts = ge.getAvailableFontFamilyNames();
-
-        for (String font : availableFonts) {
-            if (font.equalsIgnoreCase(fontName)) {
-                return new java.awt.Font(fontName, style, size); // Explicitly use java.awt.Font
-            }
-        }
-
-        // Print available fonts for debugging
-        System.out.println("Segoe UI not found. Available fonts:");
-        for (String font : availableFonts) {
-            System.out.println(font);
-        }
-
+        String[] availableFonts = ge.getAvailableFontFamilyNames();       
         return new java.awt.Font(java.awt.Font.SANS_SERIF, style, size); // Explicitly use java.awt.Font
     }
 
@@ -284,52 +368,62 @@ public class ProcessSalesPanel extends JPanel {
 
             Document product = productCollection.find(new Document("barcode", barcode)).first();
             if (product != null) {
+                // Set product name
                 txtProductName.setText(product.getString("productName"));
 
-                // CORRECTED: Use "ratePerPiece" (lowercase) to match the MongoDB field
-                Object ratePerPieceObj = product.get("ratePerPiece");
-                double ratePerPiece = 0.0;  // Default value
-                if (ratePerPieceObj instanceof Number) {
-                    ratePerPiece = ((Number) ratePerPieceObj).doubleValue();
-                } else if (ratePerPieceObj != null) {
-                    // Attempt to parse if it's stored as a string
-                    try {
-                        ratePerPiece = Double.parseDouble(ratePerPieceObj.toString());
-                    } catch (NumberFormatException e) {
-                        JOptionPane.showMessageDialog(this, "ratePerPiece is invalid in the database!");
-                    }
-                }
-             // Assuming txtPricePerGram, txtStockQuantity, and txtTotalPrice are your JTextFields
+                // Get category
+                String category = product.getString("category");
 
-                txtPricePerGram.setText(String.valueOf(ratePerPiece));
+                // Default quantity set to 1
+                int quantity = 1;
+                txtQuantity.setText(String.valueOf(quantity));
 
-                // Get stock quantity safely
-                int stockQuantity = product.getInteger("stockQuantity", 0);
-                txtStockQuantity.setText(String.valueOf(stockQuantity));
+               
+                double ratePerPiece = getDoubleValue(product, "ratePerPiece");
+                double salesPrice = getDoubleValue(product, "salesPrice");
 
-                // Get quantity from the txtTotalPrice field
-                int quantity = 0;
-                try {
-                    quantity = Integer.parseInt(txtTotalPrice.getText().trim());  // Parse the quantity
-                } catch (NumberFormatException e) {
-                    // If parsing fails, set quantity to 0 (or you can show a message if you prefer)
-                    quantity = 0;
-                }
+                if ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) {
+                    // Fetch grams value correctly
+                    grams = getDoubleValue(product, "grams");
 
-                // Calculate total amount based on quantity
-                double totalAmount;
-                if (quantity == 0) {
-                    // If quantity is 0, show the actual price (rate per piece)
-                    totalAmount = ratePerPiece;
+                    txtPricePerGram.setText(String.valueOf(grams)); // Display grams
+                    txtCurrentGoldRate.setText(""); // Clear input for new gold rate
+
+                    RateLabel.setText("Rate Per Gram");
+                    txtCurrentGoldRate.setVisible(true);
+                    goldRateLabel.setVisible(true);
+
+                    // ✅ Add listener to update calculations dynamically
+                    txtCurrentGoldRate.addKeyListener(new KeyAdapter() {
+                        @Override
+                        public void keyReleased(KeyEvent e) {
+                            calculateGoldPrice(grams);
+                        }
+                    });
+
+                } else if ("Emetation".equalsIgnoreCase(category)) {
+                    txtPricePerGram.setText(String.valueOf(salesPrice));
+
+                    double totalAmount = salesPrice * quantity;
+                    txtTotalPrice.setText(String.valueOf(totalAmount));
+
+                    RateLabel.setText("Rate Per Piece");
+                    txtCurrentGoldRate.setVisible(false);
+                    goldRateLabel.setVisible(false);
+                    
+                    updateGSTandFinalAmount(totalAmount, category);
                 } else {
-                    // If quantity is greater than 0, multiply rate with quantity
-                    totalAmount = ratePerPiece * quantity;
+                    txtPricePerGram.setText(String.valueOf(ratePerPiece));
+
+                    double totalAmount = ratePerPiece * quantity;
+                    txtTotalPrice.setText(String.valueOf(totalAmount));
+
+                    RateLabel.setText("Rate Per Piece");
+                    txtCurrentGoldRate.setVisible(false);
+                    goldRateLabel.setVisible(false);
+                    
+                    updateGSTandFinalAmount(totalAmount, category);
                 }
-
-                // Display the calculated total amount in the txtTotalPrice field
-                txtTotalPrice.setText(String.valueOf(totalAmount));  // Assuming you want to show total amount in txtTotalPrice
-
-
             } else {
                 JOptionPane.showMessageDialog(this, "Product not found.");
             }
@@ -337,6 +431,62 @@ public class ProcessSalesPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Error connecting to the database: " + e.getMessage());
         }
     }
+
+    // ✅ Function to calculate Gold Price dynamically
+    private void calculateGoldPrice(double grams) {
+        try {
+            double goldRate = Double.parseDouble(txtCurrentGoldRate.getText().trim());
+            double totalAmount = goldRate * grams;
+
+            txtTotalPrice.setText(String.format("%.2f", totalAmount));
+
+            updateGSTandFinalAmount(totalAmount, "Gold");
+        } catch (NumberFormatException ex) {
+            txtTotalPrice.setText("0.00");
+            lblGstAmount.setText("0.00");
+            lblMakingCharges.setText("0.00");
+            lbltotalamount.setText("0.00");
+        }
+    }
+
+    // ✅ Function to calculate GST and Final Amount
+    private void updateGSTandFinalAmount(double totalAmount, String category) {
+        double gstRate = ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) ? 0.03 :
+                         ("Emetation".equalsIgnoreCase(category)) ? 0.05 : 0.18;
+
+        double gstAmount = totalAmount * gstRate;
+
+        double makingCharges = 0.0;
+        if ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) {
+            makingCharges = totalAmount * 0.10; // 10% making charges
+        }
+
+        double finalAmount = totalAmount + gstAmount + makingCharges;
+
+        lblGstAmount.setText(String.format("%.2f", gstAmount));
+        lblMakingCharges.setText(String.format("%.2f", makingCharges));
+        lbltotalamount.setText(String.format("%.2f", finalAmount));
+    }
+
+    // ✅ Function to safely fetch numbers from MongoDB
+    private double getDoubleValue(Document product, String key) {
+        Object value = product.get(key);
+        if (value instanceof Number) {
+            return ((Number) value).doubleValue();
+        } else if (value instanceof String) {
+            try {
+                return Double.parseDouble((String) value); // Convert string to double
+            } catch (NumberFormatException e) {
+                System.err.println("Invalid number format for key: " + key);
+                return 0.0;
+            }
+        }
+        return 0.0;
+    }
+
+ 
+
+
 
 
 
@@ -348,7 +498,7 @@ public class ProcessSalesPanel extends JPanel {
             txtTotalPrice.setText(String.valueOf(totalPrice));
 
             double finalPrice = Double.parseDouble(txtFinalPrice.getText());
-            double savings = totalPrice - finalPrice;
+            double savings = Totalprice - finalPrice;
 
             try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
                 MongoDatabase database = mongoClient.getDatabase("testDB");
@@ -370,7 +520,7 @@ public class ProcessSalesPanel extends JPanel {
 
                     Document sale = new Document("productName", txtProductName.getText())
                             .append("quantity", quantity)
-                            .append("totalPrice", totalPrice)
+                            .append("totalPrice", Totalprice)
                             .append("finalPrice", finalPrice)
                             .append("savings", savings)
                             .append("customerName", txtName.getText())
@@ -378,7 +528,7 @@ public class ProcessSalesPanel extends JPanel {
                     salesCollection.insertOne(sale);
 
                     JOptionPane.showMessageDialog(this, "Sale processed successfully!");
-                    generateInvoice(totalPrice, finalPrice, savings);
+                    generateInvoice(Totalprice, finalPrice, savings);
                     clearFields();
                 }
             }
@@ -593,11 +743,7 @@ public class ProcessSalesPanel extends JPanel {
                 String barcode = txtBarcode.getText().trim().isEmpty() ? "Not Provided" : txtBarcode.getText().trim();
                 String quantity = txtQuantity.getText().trim().isEmpty() ? "Not Provided" : txtQuantity.getText().trim();
 
-                // Debugging: Print values to check
-                System.out.println("Customer Name: " + customerName);
-                System.out.println("Product Name: " + productName);
-                System.out.println("Barcode: " + barcode);
-                System.out.println("Quantity: " + quantity);
+             
 
                 // Add Invoice Title
                 Paragraph title = new Paragraph("ABC Jewelers - Invoice", titleFont);
@@ -634,7 +780,7 @@ public class ProcessSalesPanel extends JPanel {
                 table.addCell(new PdfPCell(new Phrase(quantity, normalFont)));
 
                 table.addCell(new PdfPCell(new Phrase("Total Price", boldFont)));
-                table.addCell(new PdfPCell(new Phrase("₹" + totalPrice, normalFont)));
+                table.addCell(new PdfPCell(new Phrase("₹" + Totalprice, normalFont)));
 
                 table.addCell(new PdfPCell(new Phrase("Final Price", boldFont)));
                 table.addCell(new PdfPCell(new Phrase("₹" + finalPrice, normalFont)));
@@ -661,7 +807,6 @@ public class ProcessSalesPanel extends JPanel {
         txtBarcode.setText("");
         txtProductName.setText("");
         txtPricePerGram.setText("");
-        txtStockQuantity.setText("");
         txtQuantity.setText("");
         txtTotalPrice.setText("");
         txtName.setText("");

@@ -24,19 +24,21 @@ import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.List;
-import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.*;
-import javax.swing.*;
-import java.io.*;
-import java.net.URL;
 
 public class SalesHistoryPanel extends JPanel {
     private JTable salesTable;
     private DefaultTableModel tableModel;
     private Color backgroundColor = new Color(241, 242, 246);
     private Color formColor = Color.WHITE;
+    private JComboBox<String> monthComboBox;
+    private JTextField searchField;
+    private JLabel totalCollectionLabel ;
 
     public SalesHistoryPanel() {
         setLayout(new BorderLayout());
@@ -46,6 +48,7 @@ public class SalesHistoryPanel extends JPanel {
     }
 
     private void createUI() {
+        // Create the table model
         tableModel = new DefaultTableModel(new Object[]{
             "Barcode", "Product Name", "Product Image", "Total Price", "Final Price",
             "Customer Name", "Seller", "Date", "Invoice"
@@ -70,19 +73,46 @@ public class SalesHistoryPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(salesTable);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(formColor);
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        // Create a panel for the filter and search components
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        filterPanel.setBackground(formColor);
+        filterPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
+        // Add month dropdown
+        String[] months = {"All", "January", "February", "March", "April", "May", "June", 
+                           "July", "August", "September", "October", "November", "December"};
+        monthComboBox = new JComboBox<>(months);
+        monthComboBox.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        monthComboBox.addActionListener(e -> filterSalesByMonthAndSearch());
+        filterPanel.add(new JLabel("Filter by Month:"));
+        filterPanel.add(monthComboBox);
+
+        // Add search field
+        searchField = new JTextField(20);
+        searchField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        searchField.setToolTipText("Search by Barcode, Product Name, Customer Name, or Total Price");
+        filterPanel.add(new JLabel("Search:"));
+        filterPanel.add(searchField);
+
+        // Add search button
+        JButton btnSearch = createActionButton("Search", new Color(52, 152, 219));
+        btnSearch.addActionListener(e -> filterSalesByMonthAndSearch());
+        filterPanel.add(btnSearch);
+
+        // Add refresh button
         JButton btnRefresh = createActionButton("Refresh", new Color(52, 152, 219));
-        btnRefresh.addActionListener((ActionEvent e) -> {
+        btnRefresh.addActionListener(e -> {
             tableModel.setRowCount(0);
             fetchSalesData();
         });
-        buttonPanel.add(btnRefresh);
+        filterPanel.add(btnRefresh);
+        
+        totalCollectionLabel = new JLabel("Total Collection: $0.00");
+        filterPanel.add(totalCollectionLabel); // Assuming you have a panel to add components to
 
+
+        add(filterPanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
     }
 
     private void fetchSalesData() {
@@ -128,6 +158,55 @@ public class SalesHistoryPanel extends JPanel {
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error fetching sales records: " + e.getMessage());
         }
+    }
+
+    private void filterSalesByMonthAndSearch() {
+        String selectedMonth = (String) monthComboBox.getSelectedItem();
+        String searchText = searchField.getText().toLowerCase().trim();
+        double totalCollection = 0; // Variable to hold the total collection
+
+        // Loop through all rows to apply month filtering
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            String timestamp = (String) tableModel.getValueAt(i, 7); // Assuming timestamp is in column 7
+            String barcode = (String) tableModel.getValueAt(i, 0); // Barcode in column 0
+            String productName = (String) tableModel.getValueAt(i, 1); // Product name in column 1
+            String customerName = (String) tableModel.getValueAt(i, 5); // Customer name in column 5
+            String totalPrice = String.valueOf(tableModel.getValueAt(i, 3)); // Total price in column 3
+
+            // Safe conversion to lower case
+            barcode = (barcode != null) ? barcode.toLowerCase() : "";
+            productName = (productName != null) ? productName.toLowerCase() : "";
+            customerName = (customerName != null) ? customerName.toLowerCase() : "";
+            totalPrice = (totalPrice != null) ? totalPrice.toLowerCase() : "";
+
+            // Parse the timestamp to extract the month
+            SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd", Locale.ENGLISH); // Format: "Wed Feb 19"
+            try {
+                Date date = dateFormat.parse(timestamp);
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(date);
+                String month = new SimpleDateFormat("MMMM", Locale.ENGLISH).format(cal.getTime()); // Get month name
+                
+                // Check if the row matches the selected month and the search criteria
+                boolean matchesMonth = selectedMonth.equals("All") || month.equalsIgnoreCase(selectedMonth);
+                boolean matchesSearch = barcode.contains(searchText) || productName.contains(searchText) ||
+                                        customerName.contains(searchText) || totalPrice.contains(searchText);
+
+                // If both filters match, show the row and add the total to the collection
+                if (matchesMonth && matchesSearch) {
+                    salesTable.setRowHeight(i, 70); // Show row
+                    double price = Double.parseDouble(tableModel.getValueAt(i, 3).toString());
+                    totalCollection += price; // Add the total price for this row to the collection
+                } else {
+                    salesTable.setRowHeight(i, 1); // Hide row
+                }
+            } catch (ParseException e) {
+                e.printStackTrace(); // Handle date parsing exceptions
+            }
+        }
+
+        // Update the label or field to show the total collection for the selected month
+        totalCollectionLabel.setText("Total Collection: " + totalCollection); // Assuming you have a label for the total collection
     }
 
     private void generateInvoice(String barcode, String productName, double totalPrice, double finalPrice, String customerName, String staff, String timestamp, String imageUrl) {

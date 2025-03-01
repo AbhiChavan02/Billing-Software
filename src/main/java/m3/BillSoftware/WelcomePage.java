@@ -160,7 +160,7 @@ public class WelcomePage extends JFrame {
         try {
             URL imageUrl = getClass().getResource(path);
             if (imageUrl == null) {
-                System.out.println(" Image not found: " + path);
+            	System.out.println(" Image not found: " + path);
                 return null;
             }
             return ImageIO.read(imageUrl);

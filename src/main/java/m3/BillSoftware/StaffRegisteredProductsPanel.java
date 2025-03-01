@@ -5,13 +5,13 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.util.Objects;
 
@@ -27,11 +27,11 @@ public class StaffRegisteredProductsPanel extends JPanel {
     public StaffRegisteredProductsPanel() {
         setLayout(new BorderLayout());
         setBackground(backgroundColor);
+        setPreferredSize(new Dimension(1200, 800));
         createUI();
         loadProductData();
     }
 
-    // Image renderer class (added)
     private class ImageCellRenderer extends JLabel implements TableCellRenderer {
         private final int IMAGE_SIZE = 60;
 
@@ -54,24 +54,49 @@ public class StaffRegisteredProductsPanel extends JPanel {
     }
 
     private void createUI() {
-        // Added "Image" column
-        tableModel = new DefaultTableModel(new Object[]{"Barcode", "Product Name", "Image", "Category", "Rate Per Piece", "Stock Quantity"}, 0);
+        tableModel = new DefaultTableModel(new Object[]{"Barcode", "Product Name", "Image", "Category", "Rate/Price", "Stock Quantity"}, 0);
         
         productTable = new JTable(tableModel);
-        productTable.setRowHeight(70);  // Increased row height
+        productTable.setRowHeight(70);
         productTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         productTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
         
-        // Set image column properties
-        productTable.getColumnModel().getColumn(2).setPreferredWidth(150);
+        // Set custom renderer for numeric columns
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, 
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                setHorizontalAlignment(SwingConstants.CENTER);
+                
+                if (column == 4) { // Rate/Price column
+                    String category = (String) tableModel.getValueAt(row, 3);
+                    if ("Emetation".equalsIgnoreCase(category)) {
+                        setText(value != null ? String.format("₹%.2f", value) : "N/A");
+                    } else {
+                        setText(value != null ? String.format("%.2f g", value) : "N/A");
+                    }
+                }
+                return this;
+            }
+        };
+
+        for (int i = 0; i < productTable.getColumnCount(); i++) {
+            productTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
         productTable.getColumnModel().getColumn(2).setCellRenderer(new ImageCellRenderer());
+        productTable.getColumnModel().getColumn(2).setPreferredWidth(150);
+
+        JScrollPane scrollPane = new JScrollPane(productTable);
+        scrollPane.setPreferredSize(new Dimension(1150, 700));
 
         btnRefresh = createActionButton("Refresh", new Color(46, 204, 113));
         btnSearch = createActionButton("Search", new Color(241, 196, 15));
 
         txtSearch = new JTextField(15);
         txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        searchCriteria = new JComboBox<>(new String[]{"Barcode", "Product Name", "Category", "Rate Per Piece", "Stock Quantity"});
+        searchCriteria = new JComboBox<>(new String[]{"Barcode", "Product Name", "Category", "Stock Quantity"});
         searchCriteria.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
         btnRefresh.addActionListener(e -> loadProductData());
@@ -87,21 +112,20 @@ public class StaffRegisteredProductsPanel extends JPanel {
         searchPanel.add(btnRefresh);
 
         add(searchPanel, BorderLayout.NORTH);
-        add(new JScrollPane(productTable), BorderLayout.CENTER);
+        add(scrollPane, BorderLayout.CENTER);
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
     }
 
-    // Added image loading method
     private ImageIcon loadProductImage(String imageUrl) {
         try {
             if (imageUrl != null && !imageUrl.isEmpty()) {
-                Image image = new ImageIcon(new URL(imageUrl)).getImage();
-                Image scaledImage = image.getScaledInstance(60, 60, Image.SCALE_SMOOTH);
-                return new ImageIcon(scaledImage);
+                return new ImageIcon(new ImageIcon(new URL(imageUrl)).getImage()
+                        .getScaledInstance(60, 60, Image.SCALE_SMOOTH));
             }
         } catch (Exception e) {
             System.out.println("Error loading image: " + e.getMessage());
         }
-        return new ImageIcon(new ImageIcon("default-placeholder.png").getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH));
+        return new ImageIcon(new BufferedImage(60, 60, BufferedImage.TYPE_INT_ARGB));
     }
 
     private void loadProductData() {
@@ -114,22 +138,29 @@ public class StaffRegisteredProductsPanel extends JPanel {
                 String barcode = product.getString("barcode");
                 String productName = product.getString("productName");
                 String category = product.getString("category");
-                Number ratePerPiece = product.get("ratePerPiece", Number.class);
+                Object rateValue = getRateValue(product, category);
                 Integer stockQuantity = product.getInteger("stockQuantity");
                 String imageUrl = product.getString("productImagePath");
-                
-                // Added image column
+
                 tableModel.addRow(new Object[]{
                     barcode != null ? barcode : "N/A",
                     productName != null ? productName : "N/A",
-                    loadProductImage(imageUrl),  // Image column
+                    loadProductImage(imageUrl),
                     category != null ? category : "N/A",
-                    ratePerPiece != null ? ratePerPiece.intValue() : 0,
+                    rateValue,
                     stockQuantity != null ? stockQuantity : 0
                 });
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error loading product data: " + e.getMessage());
+        }
+    }
+
+    private Object getRateValue(Document product, String category) {
+        if ("Emetation".equalsIgnoreCase(category)) {
+            return product.getDouble("salesPrice");
+        } else {
+            return product.getDouble("grams");
         }
     }
 
@@ -157,14 +188,6 @@ public class StaffRegisteredProductsPanel extends JPanel {
                 case "Category":
                     query.append("category", new Document("$regex", searchValue).append("$options", "i"));
                     break;
-                case "Rate Per Piece":
-                    try {
-                        query.append("ratePerPiece", Double.parseDouble(searchValue));
-                    } catch (NumberFormatException e) {
-                        JOptionPane.showMessageDialog(this, "Invalid input for Rate Per Piece.");
-                        return;
-                    }
-                    break;
                 case "Stock Quantity":
                     try {
                         query.append("stockQuantity", Integer.parseInt(searchValue));
@@ -179,12 +202,13 @@ public class StaffRegisteredProductsPanel extends JPanel {
 
             tableModel.setRowCount(0);
             for (Document product : productCollection.find(query)) {
+                String category = product.getString("category");
                 tableModel.addRow(new Object[]{
                     product.getString("barcode"),
                     product.getString("productName"),
-                    loadProductImage(product.getString("productImagePath")),  // Image column
-                    product.getString("category"),
-                    product.get("ratePerPiece", Number.class),
+                    loadProductImage(product.getString("productImagePath")),
+                    category,
+                    getRateValue(product, category),
                     product.getInteger("stockQuantity")
                 });
             }
@@ -197,7 +221,6 @@ public class StaffRegisteredProductsPanel extends JPanel {
         }
     }
 
-    // Rest of the code remains unchanged
     private JButton createActionButton(String text, Color bgColor) {
         JButton btn = new JButton(text);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 14));

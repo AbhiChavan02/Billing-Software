@@ -476,18 +476,36 @@ public class RegisteredProductsPanel extends JPanel {
             Double newGrams = null;
 
             if ("Emetation".equalsIgnoreCase(newCategory)) {
+                // Handle Emetation category fields
                 String purchaseStr = JOptionPane.showInputDialog(this, "Enter new purchase price:", purchasePrice);
                 String salesStr = JOptionPane.showInputDialog(this, "Enter new sales price:", salesPrice);
-                newPurchasePrice = Double.parseDouble(purchaseStr);
-                newSalesPrice = Double.parseDouble(salesStr);
+                try {
+                    newPurchasePrice = Double.parseDouble(purchaseStr);
+                    newSalesPrice = Double.parseDouble(salesStr);
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(this, "Invalid input for purchase or sales price.");
+                    return;
+                }
             } else {
+                // Handle other categories
                 String gramsStr = JOptionPane.showInputDialog(this, "Enter new grams:", grams);
-                newGrams = Double.parseDouble(gramsStr);
+                try {
+                    newGrams = Double.parseDouble(gramsStr);
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(this, "Invalid input for grams.");
+                    return;
+                }
             }
 
             // Stock quantity (common)
             String stockStr = JOptionPane.showInputDialog(this, "Enter new stock quantity:", stockQuantity);
-            int newStock = Integer.parseInt(stockStr);
+            int newStock;
+            try {
+                newStock = Integer.parseInt(stockStr);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Invalid input for stock quantity.");
+                return;
+            }
 
             // Update the table model with the new values
             tableModel.setValueAt(newProductName, rowIndex, 1);
@@ -499,13 +517,19 @@ public class RegisteredProductsPanel extends JPanel {
 
             // Create the filter for finding the product in the database
             Document filter = new Document("barcode", barcode);
+
+            // Create the update document based on the category
             Document updatedProduct = new Document()
                     .append("productName", newProductName)
                     .append("category", newCategory)
-                    .append("purchasePrice", newPurchasePrice)
-                    .append("salesPrice", newSalesPrice)
-                    .append("grams", newGrams)
                     .append("stockQuantity", newStock);
+
+            if ("Emetation".equalsIgnoreCase(newCategory)) {
+                updatedProduct.append("purchasePrice", newPurchasePrice)
+                              .append("salesPrice", newSalesPrice);
+            } else {
+                updatedProduct.append("grams", newGrams);
+            }
 
             // Perform the update operation in the database
             productCollection.updateOne(filter, new Document("$set", updatedProduct));
