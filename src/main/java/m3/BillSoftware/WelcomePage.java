@@ -13,7 +13,6 @@ public class WelcomePage extends JFrame {
     public WelcomePage() {
         // Set FlatLaf theme
         FlatLightLaf.setup();
-
         setTitle("Welcome to Bill Software");
         setExtendedState(JFrame.MAXIMIZED_BOTH); // Full screen
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
