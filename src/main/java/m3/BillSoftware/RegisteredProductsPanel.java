@@ -26,12 +26,15 @@ public class RegisteredProductsPanel extends JPanel {
     private JTextField txtSearch;
     private JComboBox<String> searchCriteria;
     private JButton btnUpdate, btnRefresh, btnDelete, btnSearch;
-    private Color backgroundColor = new Color(241, 242, 246); // Light gray background
-    private Color formColor = Color.WHITE; // White for form background
+    private Color backgroundColor = new Color(241, 242, 246);
+    private Color formColor = Color.WHITE;
+    private MongoClient mongoClient;
+    private MongoCollection<Document> productCollection;
 
     public RegisteredProductsPanel() {
         setLayout(new BorderLayout());
         setBackground(backgroundColor);
+        initializeMongoDB();
         createUI();
         loadProductData();
     }
@@ -250,21 +253,22 @@ public class RegisteredProductsPanel extends JPanel {
 
         return btn;
     }
+    
+    
+    private void initializeMongoDB() {
+        mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/");
+        MongoDatabase database = mongoClient.getDatabase("testDB");
+        productCollection = database.getCollection("Product");
+    }
 
     // Load product data from MongoDB
     private void loadProductData() {
-        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
-            MongoDatabase database = mongoClient.getDatabase("testDB");
-            MongoCollection<Document> productCollection = database.getCollection("Product");
-
-            tableModel.setRowCount(0); // Clear existing rows
-
+        try {
+            tableModel.setRowCount(0);
             for (Document product : productCollection.find()) {
                 String barcode = getStringFromDocument(product, "barcode");
                 String productName = getStringFromDocument(product, "productName");
                 String category = getStringFromDocument(product, "category");
-
-                // Fetch fields based on category
                 Double purchasePrice = null;
                 Double salesPrice = null;
                 Double grams = null;
@@ -281,46 +285,38 @@ public class RegisteredProductsPanel extends JPanel {
                 ImageIcon productImage = loadProductImage(imageUrl);
 
                 tableModel.addRow(new Object[]{
-                        barcode != null ? barcode : "N/A",
-                        productName != null ? productName : "N/A",
-                        productImage,
-                        category != null ? category : "N/A",
-                        purchasePrice,
-                        salesPrice,
-                        grams,
-                        stockQuantity != null ? stockQuantity : 0,
-                        ""  // Action column
+                    barcode != null ? barcode : "N/A",
+                    productName != null ? productName : "N/A",
+                    productImage,
+                    category != null ? category : "N/A",
+                    purchasePrice,
+                    salesPrice,
+                    grams,
+                    stockQuantity != null ? stockQuantity : 0,
+                    ""
                 });
             }
 
-            // Set custom renderers for numeric columns
             DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
                 @Override
                 public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                     super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                     setHorizontalAlignment(SwingConstants.CENTER);
-                    if (value == null) {
-                        setText("N/A");
-                    } else if (value instanceof Double) {
+                    if (value == null) setText("N/A");
+                    else if (value instanceof Double) {
                         switch (column) {
-                            case 4: // Purchase Price
-                            case 5: // Sales Price
-                                setText(String.format("₹%.2f", value));
-                                break;
-                            case 6: // Grams
-                                setText(String.format("%.2f g", value));
-                                break;
+                            case 4: setText(String.format("₹%.2f", value)); break;
+                            case 5: setText(String.format("₹%.2f", value)); break;
+                            case 6: setText(String.format("%.2f g", value)); break;
                         }
                     }
                     return this;
                 }
             };
 
-            // Apply to columns 4-7
             for (int i = 4; i <= 7; i++) {
                 productTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
             }
-
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error loading product data: " + e.getMessage());
         }
@@ -334,7 +330,6 @@ public class RegisteredProductsPanel extends JPanel {
                 return new ImageIcon(image.getScaledInstance(60, 60, Image.SCALE_SMOOTH));
             }
         } catch (Exception e) {
-            System.out.println("Error loading image: " + e.getMessage());
             // Return blank image
             return new ImageIcon(new BufferedImage(60, 60, BufferedImage.TYPE_INT_ARGB));
         }
@@ -351,55 +346,16 @@ public class RegisteredProductsPanel extends JPanel {
             return;
         }
 
-        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
-            MongoDatabase database = mongoClient.getDatabase("testDB");
-            MongoCollection<Document> productCollection = database.getCollection("Product");
-
+        try {
             Document query = new Document();
             switch (criteria) {
-                case "Barcode":
-                    query.append("barcode", searchValue);
-                    break;
-                case "Product Name":
-                    query.append("productName", new Document("$regex", searchValue).append("$options", "i"));
-                    break;
-                case "Category":
-                    query.append("category", new Document("$regex", searchValue).append("$options", "i"));
-                    break;
-                case "Purchase Price":
-                    try {
-                        query.append("purchasePrice", Double.parseDouble(searchValue));
-                    } catch (NumberFormatException e) {
-                        JOptionPane.showMessageDialog(this, "Invalid input for Purchase Price.");
-                        return;
-                    }
-                    break;
-                case "Sales Price":
-                    try {
-                        query.append("salesPrice", Double.parseDouble(searchValue));
-                    } catch (NumberFormatException e) {
-                        JOptionPane.showMessageDialog(this, "Invalid input for Sales Price.");
-                        return;
-                    }
-                    break;
-                case "Grams":
-                    try {
-                        query.append("grams", Double.parseDouble(searchValue));
-                    } catch (NumberFormatException e) {
-                        JOptionPane.showMessageDialog(this, "Invalid input for Grams.");
-                        return;
-                    }
-                    break;
-                case "Stock Quantity":
-                    try {
-                        query.append("stockQuantity", Integer.parseInt(searchValue));
-                    } catch (NumberFormatException e) {
-                        JOptionPane.showMessageDialog(this, "Invalid input for Stock Quantity.");
-                        return;
-                    }
-                    break;
-                default:
-                    throw new IllegalArgumentException("Invalid search criteria.");
+                case "Barcode": query.append("barcode", searchValue); break;
+                case "Product Name": query.append("productName", new Document("$regex", searchValue).append("$options", "i")); break;
+                case "Category": query.append("category", new Document("$regex", searchValue).append("$options", "i")); break;
+                case "Purchase Price": query.append("purchasePrice", Double.parseDouble(searchValue)); break;
+                case "Sales Price": query.append("salesPrice", Double.parseDouble(searchValue)); break;
+                case "Grams": query.append("grams", Double.parseDouble(searchValue)); break;
+                case "Stock Quantity": query.append("stockQuantity", Integer.parseInt(searchValue)); break;
             }
 
             tableModel.setRowCount(0);
@@ -542,7 +498,7 @@ public class RegisteredProductsPanel extends JPanel {
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error updating product data: " + e.getMessage());
-            e.printStackTrace(); // Print stack trace for debugging
+
         }
     }
 
@@ -578,7 +534,6 @@ public class RegisteredProductsPanel extends JPanel {
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error deleting product data: " + e.getMessage());
-            e.printStackTrace(); // Print stack trace for debugging
         }
     }
 
