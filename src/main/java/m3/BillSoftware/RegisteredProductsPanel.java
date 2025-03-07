@@ -6,6 +6,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.DeleteResult;
 import org.bson.Document;
+import javax.swing.border.LineBorder;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -41,22 +42,35 @@ public class RegisteredProductsPanel extends JPanel {
 
     // Image renderer for displaying product images in the table
     private class ImageCellRenderer extends JLabel implements TableCellRenderer {
-        private final int IMAGE_SIZE = 60; // Set the size of the image (60x60 pixels)
+        private final int IMAGE_SIZE = 60;
+        private final LineBorder border = new LineBorder(Color.LIGHT_GRAY, 1);
 
         public ImageCellRenderer() {
-            setHorizontalAlignment(JLabel.CENTER); // Center-align the image
+            setHorizontalAlignment(JLabel.CENTER);
+            setOpaque(true);
+            setBorder(border);
         }
 
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+        public Component getTableCellRendererComponent(JTable table, Object value, 
+                boolean isSelected, boolean hasFocus, int row, int column) {
             if (value instanceof ImageIcon) {
                 ImageIcon icon = (ImageIcon) value;
-                // Scale the image to a square shape with fixed width and height
                 Image img = icon.getImage().getScaledInstance(IMAGE_SIZE, IMAGE_SIZE, Image.SCALE_SMOOTH);
-                setIcon(new ImageIcon(img)); // Set the resized image
+                setIcon(new ImageIcon(img));
             } else {
-                setIcon(null); // In case the value is not an ImageIcon
+                setIcon(null);
             }
+            
+            // Handle selection colors
+            if (isSelected) {
+                setBackground(table.getSelectionBackground());
+                setForeground(table.getSelectionForeground());
+            } else {
+                setBackground(table.getBackground());
+                setForeground(table.getForeground());
+            }
+            
             return this;
         }
     }
@@ -65,9 +79,12 @@ public class RegisteredProductsPanel extends JPanel {
     private class ButtonCellRenderer extends JPanel implements TableCellRenderer {
         private JButton updateButton;
         private JButton deleteButton;
+        private final LineBorder border = new LineBorder(Color.LIGHT_GRAY, 1);
 
         public ButtonCellRenderer() {
             setLayout(new GridBagLayout());
+            setOpaque(true);
+            setBorder(border);
             setOpaque(true);
 
             updateButton = new JButton("Update");
@@ -90,8 +107,13 @@ public class RegisteredProductsPanel extends JPanel {
         }
 
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            // Always show buttons
+        public Component getTableCellRendererComponent(JTable table, Object value, 
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            if (isSelected) {
+                setBackground(table.getSelectionBackground());
+            } else {
+                setBackground(table.getBackground());
+            }
             return this;
         }
     }
@@ -160,34 +182,62 @@ public class RegisteredProductsPanel extends JPanel {
         productTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         productTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
         productTable.setRowHeight(100); // Increase row height to display larger images
+        
+        productTable.setShowGrid(false); // Hide default grid
+        productTable.setIntercellSpacing(new Dimension(0, 0)); // Remove spacing between cells
 
-     // In createUI() - COLUMN WIDTH SETTINGS
+        // Column width settings
         productTable.getColumnModel().getColumn(0).setPreferredWidth(80);  // Barcode
         productTable.getColumnModel().getColumn(2).setPreferredWidth(80);  // Image
         productTable.getColumnModel().getColumn(8).setPreferredWidth(150); // Actions
 
-     // In createUI() method - CORRECTED COLUMN INDEX FOR ACTIONS
-        productTable.getColumnModel().getColumn(8).setCellRenderer(new ButtonCellRenderer()); // Index 8 for Actions column
+        // Set custom renderer for Actions column
+        productTable.getColumnModel().getColumn(8).setCellRenderer(new ButtonCellRenderer());
         productTable.getColumnModel().getColumn(8).setCellEditor(new ButtonCellEditor());
-        productTable.getColumnModel().getColumn(8).setPreferredWidth(150); // Wider for buttons
-
-        // Center-align all columns
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        for (int i = 0; i < productTable.getColumnCount(); i++) {
-            productTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
-        }
 
         // Set image renderer for column 2 (Image)
         productTable.getColumnModel().getColumn(2).setCellRenderer(new ImageCellRenderer());
 
-        // Initialize buttons
+        // Center-align all columns with borders
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
+            private final LineBorder border = new LineBorder(Color.LIGHT_GRAY, 1);
+
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, 
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                setBorder(border); // Add border to all cells
+                setHorizontalAlignment(SwingConstants.CENTER);
+                
+                // Handle specific formatting for numeric columns
+                if (value == null) {
+                    setText("N/A");
+                } else if (value instanceof Double) {
+                    switch (column) {
+                        case 4: setText(String.format("₹%.2f", value)); break; // Purchase Price
+                        case 5: setText(String.format("₹%.2f", value)); break; // Sales Price
+                        case 6: setText(String.format("%.2f g", value)); break; // Grams
+                    }
+                } else if (value instanceof Integer) {
+                    setText(value.toString()); // Stock Quantity
+                }
+                return this;
+            }
+        };
+
+        // Apply the centerRenderer to all columns except image and actions
+        for (int i = 0; i < productTable.getColumnCount(); i++) {
+            if (i != 2 && i != 8) { // Skip image and actions columns
+                productTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+            }
+        }
+
+        // Initialize buttons and search components
         btnUpdate = createActionButton("Update", new Color(52, 152, 219)); // Blue
         btnRefresh = createActionButton("Refresh", new Color(46, 204, 113)); // Green
         btnDelete = createActionButton("Delete", new Color(231, 76, 60)); // Red
         btnSearch = createActionButton("Search", new Color(241, 196, 15)); // Yellow
 
-        // Initialize search components
         txtSearch = new JTextField(15);
         txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         searchCriteria = new JComboBox<>(new String[]{"Barcode", "Product Name", "Category", "Purchase Price", "Sales Price", "Grams", "Stock Quantity"});

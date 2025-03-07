@@ -33,6 +33,8 @@ public class ProcessSalesPanel extends JPanel {
     private Double Totalprice;
     private JLabel goldRateLabel, RateLabel, gstLabel, makingChargesLabel,totalLabel, lblGstAmount, lblMakingCharges,lbltotalamount;
     double grams = 0.0;
+    private JTextField txtGstAmount, txtMakingCharges, txtTotalAmount;
+
 
     public ProcessSalesPanel() {
         setLayout(new GridBagLayout());
@@ -73,7 +75,15 @@ public class ProcessSalesPanel extends JPanel {
         txtTotalPrice = createFormTextField(20);
         txtTotalPrice.setEditable(false);
         txtFinalPrice = createFormTextField(20);
+        txtGstAmount = createFormTextField(20);
+        txtMakingCharges = createFormTextField(20); 
+        txtTotalAmount = createFormTextField(20);
         txtCurrentGoldRate = createFormTextField(20); // New field for current gold rate
+        
+        
+        txtGstAmount.setEditable(false);
+        txtMakingCharges.setEditable(false);
+        txtTotalAmount.setEditable(false);
         
         
         // Labels for GST and Making Charges instead of input fields
@@ -179,50 +189,49 @@ public class ProcessSalesPanel extends JPanel {
         // Total Price Field and Label
         gbc.gridx = 0;
         gbc.gridy = 7;
-        formPanel.add(createFormLabel("Total Price:"), gbc);
+        formPanel.add(createFormLabel("Price:"), gbc);
         gbc.gridx = 1;
         gbc.weightx = 1.0;  // Allow the text field to expand and fill the available width
         formPanel.add(txtTotalPrice, gbc);
         
-        // Final Price Field and Label
-        gbc.gridx = 0;
-        gbc.gridy = 8;
-        formPanel.add(createFormLabel("Final Price:"), gbc);
-        gbc.gridx = 1;
-        formPanel.add(txtFinalPrice, gbc);
+        
         
      // Current Gold Rate Field and Label (New field)
         goldRateLabel = createFormLabel("Current Gold Rate:"); // Label for current gold rate
         gbc.gridx = 0;
-        gbc.gridy = 10;
+        gbc.gridy = 8;
         formPanel.add(goldRateLabel, gbc);  // Label for current gold rate
 
         gbc.gridx = 1;
         formPanel.add(txtCurrentGoldRate, gbc);  // TextField for current gold rate
         
-        // GST Label
-        gstLabel = createFormLabel("GST Amount:");
+     // GST Amount Field
+        gbc.gridx = 0;
+        gbc.gridy = 10;
+        formPanel.add(createFormLabel("GST Amount:"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtGstAmount, gbc);  // Changed from lblGstAmount
+
+        // Making Charges Field
         gbc.gridx = 0;
         gbc.gridy = 11;
-        formPanel.add(gstLabel, gbc);
+        formPanel.add(createFormLabel("Making Charges:"), gbc);
         gbc.gridx = 1;
-        formPanel.add(lblGstAmount, gbc); // Label instead of text field
+        formPanel.add(txtMakingCharges, gbc);  // Changed from lblMakingCharges
 
-        // Making Charges Label
-        makingChargesLabel = createFormLabel("Making Charges:");
+        // Total Amount Field
         gbc.gridx = 0;
         gbc.gridy = 13;
-        formPanel.add(makingChargesLabel, gbc);
+        formPanel.add(createFormLabel("Total Amount:"), gbc);
         gbc.gridx = 1;
-        formPanel.add(lblMakingCharges, gbc); // Label instead of text field
+        formPanel.add(txtTotalAmount, gbc);  // Changed from lbltotalamount
         
-        // Making Charges Label
-        totalLabel = createFormLabel("Total Amount:");
+     // Final Price Field and Label
         gbc.gridx = 0;
         gbc.gridy = 14;
-        formPanel.add(totalLabel, gbc);
+        formPanel.add(createFormLabel("Final Price:"), gbc);
         gbc.gridx = 1;
-        formPanel.add(lbltotalamount, gbc); // Label instead of text field
+        formPanel.add(txtFinalPrice, gbc);
         
         
 
@@ -234,10 +243,10 @@ public class ProcessSalesPanel extends JPanel {
         formPanel.revalidate();
         formPanel.repaint();
 
-        // Button Panel for Process Sale, Clear
+     // Button Panel for Process Sale, Clear
         gbc.gridx = 0;
         gbc.gridy = 15;
-        gbc.gridwidth = 3;
+        gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.CENTER;
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
@@ -245,8 +254,9 @@ public class ProcessSalesPanel extends JPanel {
         buttonPanel.add(btnProcessSale);
         buttonPanel.add(btnClear);
         formPanel.add(buttonPanel, gbc);
+        
 
-        // Add formPanel to JScrollPane
+     // Add formPanel to JScrollPane
         JScrollPane scrollPane = new JScrollPane(formPanel);
         scrollPane.setPreferredSize(new Dimension(900, 700)); // Set a preferred size for the scrollable area
         add(scrollPane); // Add scrollPane to the JFrame instead of formPanel directly
@@ -256,6 +266,8 @@ public class ProcessSalesPanel extends JPanel {
         btnProcessSale.addActionListener(e -> processSale());
         btnClear.addActionListener(e -> clearFields());
     }
+    
+    
     private void updateTotalPriceWithGoldRate() {
         try {
             // Get the current gold rate entered by the user
@@ -325,6 +337,8 @@ public class ProcessSalesPanel extends JPanel {
 
         return btn;
     }
+    
+    
     private void updateTotalPrice() {
         try {
             // Get the rate per piece (assuming this has already been set in txtPricePerGram)
@@ -378,7 +392,6 @@ public class ProcessSalesPanel extends JPanel {
                 int quantity = 1;
                 txtQuantity.setText(String.valueOf(quantity));
 
-               
                 double ratePerPiece = getDoubleValue(product, "ratePerPiece");
                 double salesPrice = getDoubleValue(product, "salesPrice");
 
@@ -393,7 +406,7 @@ public class ProcessSalesPanel extends JPanel {
                     txtCurrentGoldRate.setVisible(true);
                     goldRateLabel.setVisible(true);
 
-                    // ✅ Add listener to update calculations dynamically
+                    // Add listener to update calculations dynamically
                     txtCurrentGoldRate.addKeyListener(new KeyAdapter() {
                         @Override
                         public void keyReleased(KeyEvent e) {
@@ -410,7 +423,8 @@ public class ProcessSalesPanel extends JPanel {
                     RateLabel.setText("Rate Per Piece");
                     txtCurrentGoldRate.setVisible(false);
                     goldRateLabel.setVisible(false);
-                    
+
+                    // Update GST, Making Charges, and Total Amount
                     updateGSTandFinalAmount(totalAmount, category);
                 } else {
                     txtPricePerGram.setText(String.valueOf(ratePerPiece));
@@ -421,7 +435,8 @@ public class ProcessSalesPanel extends JPanel {
                     RateLabel.setText("Rate Per Piece");
                     txtCurrentGoldRate.setVisible(false);
                     goldRateLabel.setVisible(false);
-                    
+
+                    // Update GST, Making Charges, and Total Amount
                     updateGSTandFinalAmount(totalAmount, category);
                 }
             } else {
@@ -440,33 +455,43 @@ public class ProcessSalesPanel extends JPanel {
 
             txtTotalPrice.setText(String.format("%.2f", totalAmount));
 
+            // Update GST, Making Charges, and Total Amount
             updateGSTandFinalAmount(totalAmount, "Gold");
         } catch (NumberFormatException ex) {
             txtTotalPrice.setText("0.00");
-            lblGstAmount.setText("0.00");
-            lblMakingCharges.setText("0.00");
-            lbltotalamount.setText("0.00");
+            txtGstAmount.setText("0.00");
+            txtMakingCharges.setText("0.00");
+            txtTotalAmount.setText("0.00");
         }
     }
-
-    // ✅ Function to calculate GST and Final Amount
+    
+ // ✅ Function to calculate GST and Final Amount correctly
+ // ====== 1. Update the updateGSTandFinalAmount Method ======
     private void updateGSTandFinalAmount(double totalAmount, String category) {
+        // Calculate Making Charges
+        double makingChargesRate = ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) ? 0.14 : 0.0;
+        double makingCharges = totalAmount * makingChargesRate;
+
+        // New total after adding making charges
+        double newTotal = totalAmount + makingCharges;
+
+        // Calculate GST on the new total
         double gstRate = ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) ? 0.03 :
                          ("Emetation".equalsIgnoreCase(category)) ? 0.05 : 0.18;
+        double gstAmount = newTotal * gstRate;
 
-        double gstAmount = totalAmount * gstRate;
+        // Final amount including GST
+        double finalAmount = newTotal + gstAmount;
 
-        double makingCharges = 0.0;
-        if ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) {
-            makingCharges = totalAmount * 0.10; // 10% making charges
-        }
+        // Update text fields with calculated values
+        txtMakingCharges.setText(String.format("%.2f", makingCharges));
+        txtGstAmount.setText(String.format("%.2f", gstAmount));
+        txtTotalAmount.setText(String.format("%.2f", finalAmount));
 
-        double finalAmount = totalAmount + gstAmount + makingCharges;
-
-        lblGstAmount.setText(String.format("%.2f", gstAmount));
-        lblMakingCharges.setText(String.format("%.2f", makingCharges));
-        lbltotalamount.setText(String.format("%.2f", finalAmount));
+        // Update Final Price field
+        txtFinalPrice.setText(String.format("%.2f", finalAmount));
     }
+
 
     // ✅ Function to safely fetch numbers from MongoDB
     private double getDoubleValue(Document product, String key) {
@@ -498,7 +523,7 @@ public class ProcessSalesPanel extends JPanel {
             txtTotalPrice.setText(String.valueOf(totalPrice));
 
             double finalPrice = Double.parseDouble(txtFinalPrice.getText());
-            double savings = Totalprice - finalPrice;
+            double savings = totalPrice - finalPrice;
 
             try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
                 MongoDatabase database = mongoClient.getDatabase("testDB");
@@ -520,7 +545,7 @@ public class ProcessSalesPanel extends JPanel {
 
                     Document sale = new Document("productName", txtProductName.getText())
                             .append("quantity", quantity)
-                            .append("totalPrice", Totalprice)
+                            .append("totalPrice", totalPrice)
                             .append("finalPrice", finalPrice)
                             .append("savings", savings)
                             .append("customerName", txtName.getText())
@@ -528,7 +553,7 @@ public class ProcessSalesPanel extends JPanel {
                     salesCollection.insertOne(sale);
 
                     JOptionPane.showMessageDialog(this, "Sale processed successfully!");
-                    generateInvoice(Totalprice, finalPrice, savings);
+                    generateInvoice(totalPrice, finalPrice, savings);
                     clearFields();
                 }
             }
@@ -661,7 +686,7 @@ public class ProcessSalesPanel extends JPanel {
 
         StringBuilder html = new StringBuilder();
         html.append("<html><body style='padding:20px;'>");
-        html.append("<h1 style='text-align:center;'>ABC Jewelers</h1>");
+        html.append("<h1 style='text-align:center;'>RajLaxhmi Jewelers</h1>");
         html.append("<hr>");
         html.append("<p><b>Date:</b> ").append(new SimpleDateFormat("dd-MM-yyyy HH:mm").format(new Date())).append("</p>");
         html.append("<p><b>Customer Name:</b> ").append(txtName.getText()).append("</p>");
@@ -811,6 +836,9 @@ public class ProcessSalesPanel extends JPanel {
         txtTotalPrice.setText("");
         txtName.setText("");
         txtFinalPrice.setText("");
+        txtGstAmount.setText("");
+        txtMakingCharges.setText("");
+        txtTotalAmount.setText("");
     }
 
     public static void main(String[] args) {

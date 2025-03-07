@@ -6,6 +6,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
@@ -13,7 +14,6 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class StaffRegisteredProductsPanel extends JPanel {
     private JTable productTable;
@@ -23,11 +23,8 @@ public class StaffRegisteredProductsPanel extends JPanel {
     private JButton btnRefresh, btnSearch;
     private Color backgroundColor = new Color(241, 242, 246);
     private Color formColor = Color.WHITE;
-    private MongoClient mongoClient;
-    private ConcurrentHashMap<String, ImageIcon> imageCache = new ConcurrentHashMap<>();
 
     public StaffRegisteredProductsPanel() {
-        initializeMongoClient();
         setLayout(new BorderLayout());
         setBackground(backgroundColor);
         setPreferredSize(new Dimension(1200, 800));
@@ -35,35 +32,21 @@ public class StaffRegisteredProductsPanel extends JPanel {
         loadProductData();
     }
 
-    private void initializeMongoClient() {
-        try {
-            mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/");
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error connecting to database: " + e.getMessage());
-        }
-    }
-
-    @Override
-    public void removeNotify() {
-        super.removeNotify();
-        if (mongoClient != null) {
-            mongoClient.close();
-        }
-    }
-
     private class ImageCellRenderer extends JLabel implements TableCellRenderer {
         private final int IMAGE_SIZE = 60;
 
         public ImageCellRenderer() {
             setHorizontalAlignment(JLabel.CENTER);
+            setBorder(new LineBorder(Color.LIGHT_GRAY)); // Add border to image cells
         }
 
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
+        public Component getTableCellRendererComponent(JTable table, Object value, 
                 boolean isSelected, boolean hasFocus, int row, int column) {
             if (value instanceof ImageIcon) {
                 ImageIcon icon = (ImageIcon) value;
-                setIcon(icon);
+                Image img = icon.getImage().getScaledInstance(IMAGE_SIZE, IMAGE_SIZE, Image.SCALE_SMOOTH);
+                setIcon(new ImageIcon(img));
             } else {
                 setIcon(null);
             }
@@ -79,14 +62,16 @@ public class StaffRegisteredProductsPanel extends JPanel {
         productTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         productTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
         
+        // Set custom renderer for numeric columns with borders
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer() {
             @Override
-            public Component getTableCellRendererComponent(JTable table, Object value,
+            public Component getTableCellRendererComponent(JTable table, Object value, 
                     boolean isSelected, boolean hasFocus, int row, int column) {
                 super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 setHorizontalAlignment(SwingConstants.CENTER);
+                setBorder(new LineBorder(Color.LIGHT_GRAY)); // Add border to all cells
                 
-                if (column == 4) {
+                if (column == 4) { // Rate/Price column
                     String category = (String) tableModel.getValueAt(row, 3);
                     if ("Emetation".equalsIgnoreCase(category)) {
                         setText(value != null ? String.format("₹%.2f", value) : "N/A");
@@ -98,10 +83,12 @@ public class StaffRegisteredProductsPanel extends JPanel {
             }
         };
 
+        // Apply the custom renderer to all columns
         for (int i = 0; i < productTable.getColumnCount(); i++) {
             productTable.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
 
+        // Set custom renderer for the image column
         productTable.getColumnModel().getColumn(2).setCellRenderer(new ImageCellRenderer());
         productTable.getColumnModel().getColumn(2).setPreferredWidth(150);
 
@@ -133,80 +120,44 @@ public class StaffRegisteredProductsPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
     }
 
-    private void loadProductData() {
-        new SwingWorker<Void, Void>() {
-            @Override
-            protected Void doInBackground() {
-                try {
-                    MongoDatabase database = mongoClient.getDatabase("testDB");
-                    MongoCollection<Document> collection = database.getCollection("Product");
-                    tableModel.setRowCount(0); // Clear existing data
-
-                    for (Document product : collection.find()) {
-                        String barcode = product.getString("barcode");
-                        String productName = product.getString("productName");
-                        String category = product.getString("category");
-                        Object rateValue = getRateValue(product, category);
-                        Integer stockQuantity = product.getInteger("stockQuantity");
-                        String imageUrl = product.getString("productImagePath");
-
-                        SwingUtilities.invokeLater(() -> {
-                            tableModel.addRow(new Object[]{
-                                barcode != null ? barcode : "N/A",
-                                productName != null ? productName : "N/A",
-                                createPlaceholderImage(),
-                                category != null ? category : "N/A",
-                                rateValue,
-                                stockQuantity != null ? stockQuantity : 0
-                            });
-                        });
-
-                        loadImageAsync(imageUrl, tableModel.getRowCount() - 1);
-                    }
-                } catch (Exception e) {
-                    SwingUtilities.invokeLater(() -> 
-                        JOptionPane.showMessageDialog(StaffRegisteredProductsPanel.this, "Error loading product data: " + e.getMessage()));
-                }
-                return null;
+    private ImageIcon loadProductImage(String imageUrl) {
+        try {
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                return new ImageIcon(new ImageIcon(new URL(imageUrl)).getImage()
+                        .getScaledInstance(60, 60, Image.SCALE_SMOOTH));
             }
-        }.execute();
-    }
-
-    private ImageIcon createPlaceholderImage() {
+        } catch (Exception e) {
+            System.out.println("Error loading image: " + e.getMessage());
+        }
         return new ImageIcon(new BufferedImage(60, 60, BufferedImage.TYPE_INT_ARGB));
     }
 
-    private void loadImageAsync(String imageUrl, int rowIndex) {
-        if (imageUrl == null || imageUrl.isEmpty()) return;
+    private void loadProductData() {
+        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
+            MongoDatabase database = mongoClient.getDatabase("testDB");
+            MongoCollection<Document> productCollection = database.getCollection("Product");
+            tableModel.setRowCount(0);
 
-        new SwingWorker<ImageIcon, Void>() {
-            @Override
-            protected ImageIcon doInBackground() {
-                if (imageCache.containsKey(imageUrl)) {
-                    return imageCache.get(imageUrl);
-                }
-                
-                try {
-                    ImageIcon original = new ImageIcon(new URL(imageUrl));
-                    Image scaled = original.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
-                    ImageIcon scaledIcon = new ImageIcon(scaled);
-                    imageCache.put(imageUrl, scaledIcon);
-                    return scaledIcon;
-                } catch (Exception e) {
-                    return createPlaceholderImage();
-                }
-            }
+            for (Document product : productCollection.find()) {
+                String barcode = product.getString("barcode");
+                String productName = product.getString("productName");
+                String category = product.getString("category");
+                Object rateValue = getRateValue(product, category);
+                Integer stockQuantity = product.getInteger("stockQuantity");
+                String imageUrl = product.getString("productImagePath");
 
-            @Override
-            protected void done() {
-                try {
-                    ImageIcon icon = get();
-                    tableModel.setValueAt(icon, rowIndex, 2);
-                } catch (Exception e) {
-                    // Handle exception
-                }
+                tableModel.addRow(new Object[]{
+                    barcode != null ? barcode : "N/A",
+                    productName != null ? productName : "N/A",
+                    loadProductImage(imageUrl),
+                    category != null ? category : "N/A",
+                    rateValue,
+                    stockQuantity != null ? stockQuantity : 0
+                });
             }
-        }.execute();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error loading product data: " + e.getMessage());
+        }
     }
 
     private Object getRateValue(Document product, String category) {
@@ -226,65 +177,52 @@ public class StaffRegisteredProductsPanel extends JPanel {
             return;
         }
 
-        new SwingWorker<Void, Void>() {
-            @Override
-            protected Void doInBackground() {
-                try {
-                    MongoDatabase database = mongoClient.getDatabase("testDB");
-                    MongoCollection<Document> collection = database.getCollection("Product");
+        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
+            MongoDatabase database = mongoClient.getDatabase("testDB");
+            MongoCollection<Document> productCollection = database.getCollection("Product");
 
-                    Document query = new Document();
-                    switch (criteria) {
-                        case "Barcode":
-                            query.append("barcode", searchValue);
-                            break;
-                        case "Product Name":
-                            query.append("productName", new Document("$regex", searchValue).append("$options", "i"));
-                            break;
-                        case "Category":
-                            query.append("category", new Document("$regex", searchValue).append("$options", "i"));
-                            break;
-                        case "Stock Quantity":
-                            try {
-                                query.append("stockQuantity", Integer.parseInt(searchValue));
-                            } catch (NumberFormatException e) {
-                                SwingUtilities.invokeLater(() -> 
-                                    JOptionPane.showMessageDialog(StaffRegisteredProductsPanel.this, "Invalid input for Stock Quantity."));
-                                return null;
-                            }
-                            break;
-                        default:
-                            throw new IllegalArgumentException("Invalid search criteria.");
+            Document query = new Document();
+            switch (criteria) {
+                case "Barcode":
+                    query.append("barcode", searchValue);
+                    break;
+                case "Product Name":
+                    query.append("productName", new Document("$regex", searchValue).append("$options", "i"));
+                    break;
+                case "Category":
+                    query.append("category", new Document("$regex", searchValue).append("$options", "i"));
+                    break;
+                case "Stock Quantity":
+                    try {
+                        query.append("stockQuantity", Integer.parseInt(searchValue));
+                    } catch (NumberFormatException e) {
+                        JOptionPane.showMessageDialog(this, "Invalid input for Stock Quantity.");
+                        return;
                     }
-
-                    tableModel.setRowCount(0);
-                    for (Document product : collection.find(query)) {
-                        String category = product.getString("category");
-                        SwingUtilities.invokeLater(() -> {
-                            tableModel.addRow(new Object[]{
-                                product.getString("barcode"),
-                                product.getString("productName"),
-                                createPlaceholderImage(),
-                                category,
-                                getRateValue(product, category),
-                                product.getInteger("stockQuantity")
-                            });
-                        });
-
-                        loadImageAsync(product.getString("productImagePath"), tableModel.getRowCount() - 1);
-                    }
-
-                    if (tableModel.getRowCount() == 0) {
-                        SwingUtilities.invokeLater(() -> 
-                            JOptionPane.showMessageDialog(StaffRegisteredProductsPanel.this, "No products found matching the search criteria."));
-                    }
-                } catch (Exception e) {
-                    SwingUtilities.invokeLater(() -> 
-                        JOptionPane.showMessageDialog(StaffRegisteredProductsPanel.this, "Error performing search: " + e.getMessage()));
-                }
-                return null;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Invalid search criteria.");
             }
-        }.execute();
+
+            tableModel.setRowCount(0);
+            for (Document product : productCollection.find(query)) {
+                String category = product.getString("category");
+                tableModel.addRow(new Object[]{
+                    product.getString("barcode"),
+                    product.getString("productName"),
+                    loadProductImage(product.getString("productImagePath")),
+                    category,
+                    getRateValue(product, category),
+                    product.getInteger("stockQuantity")
+                });
+            }
+
+            if (tableModel.getRowCount() == 0) {
+                JOptionPane.showMessageDialog(this, "No products found matching the search criteria.");
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error performing search: " + e.getMessage());
+        }
     }
 
     private JButton createActionButton(String text, Color bgColor) {

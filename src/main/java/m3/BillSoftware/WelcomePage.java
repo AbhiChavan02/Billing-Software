@@ -43,7 +43,7 @@ public class WelcomePage extends JFrame {
         gbc.gridy = 0;
         JLabel logoLabel = createCircularLogo("/images/logo.jpg", 150);
         if (logoLabel != null) {
-            mainPanel.add(logoLabel, gbc);
+            mainPanel.add(logoLabel, gbc);		
         }
 
         // 🏷️ Title (Row 1)
