@@ -201,12 +201,17 @@ public class ProductRegistration extends JFrame {
             double totalValue = 0;
             int soldProducts = 0;
 
+            // Counters for Emetation, Gold, and Silver
+            int emetationCount = 0;
+            int goldCount = 0;
+            int silverCount = 0;
+
             // Get total sales from sales collection
             for (Document sale : salesCollection.find()) {
                 soldProducts += sale.getInteger("quantity", 0);
             }
 
-            // Calculate available stock values
+            // Calculate available stock values and category counts
             for (Document product : productCollection.find()) {
                 int stock = product.getInteger("stockQuantity", 0);
                 totalQuantity += stock;
@@ -215,10 +220,15 @@ public class ProductRegistration extends JFrame {
                 if ("Emetation".equalsIgnoreCase(category)) {
                     double salePrice = product.getDouble("salesPrice");
                     totalValue += salePrice * stock;
-                } else {
+                    emetationCount++;
+                } else if ("Gold".equalsIgnoreCase(category)) {
                     double grams = product.getDouble("grams");
-                    // Assuming grams represents value for precious metals
                     totalValue += grams * stock;
+                    goldCount++;
+                } else if ("Silver".equalsIgnoreCase(category)) {
+                    double grams = product.getDouble("grams");
+                    totalValue += grams * stock;
+                    silverCount++;
                 }
             }
 
@@ -234,6 +244,22 @@ public class ProductRegistration extends JFrame {
             metricsPanel.add(soldProductsBox);
 
             statsPanel.add(metricsPanel);
+            statsPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+
+            // Category Counts Panel (Plain Labels)
+            JPanel categoryCountsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+            categoryCountsPanel.setBackground(new Color(241, 242, 246));
+
+            // Add plain labels for Emetation, Gold, and Silver counts
+            JLabel lblEmetationCount = createPlainLabel("Emetation: " + emetationCount, new Color(52, 152, 219));
+            JLabel lblGoldCount = createPlainLabel("Gold: " + goldCount, new Color(241, 196, 15));
+            JLabel lblSilverCount = createPlainLabel("Silver: " + silverCount, new Color(231, 76, 60));
+
+            categoryCountsPanel.add(lblEmetationCount);
+            categoryCountsPanel.add(lblGoldCount);
+            categoryCountsPanel.add(lblSilverCount);
+
+            statsPanel.add(categoryCountsPanel);
             statsPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
             // Add a button above the tabbed pane
@@ -281,6 +307,14 @@ public class ProductRegistration extends JFrame {
         contentPanel.add(statsPanel);
         contentPanel.revalidate();
         contentPanel.repaint();
+    }
+
+    // Helper method to create a plain label
+    private JLabel createPlainLabel(String text, Color color) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        label.setForeground(color);
+        return label;
     }
 
     // Helper method to create a panel for a specific category
