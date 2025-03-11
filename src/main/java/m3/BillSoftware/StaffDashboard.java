@@ -41,7 +41,7 @@ public class StaffDashboard extends JFrame {
 
         // Create Menu Panel (Left Side)
         menuPanel = new JPanel();
-        menuPanel.setLayout(new GridLayout(4, 1, 15, 15)); // Increased to 4 rows
+        menuPanel.setLayout(new GridLayout(5, 1, 15, 15)); // Increased to 4 rows
         menuPanel.setPreferredSize(new Dimension(280, getHeight()));
         menuPanel.setBackground(primaryColor);
         menuPanel.setBorder(BorderFactory.createEmptyBorder(30, 20, 30, 20));
@@ -50,6 +50,7 @@ public class StaffDashboard extends JFrame {
 
         JButton btnProcessSales = createMenuButton("Start Sale");
         JButton btnRegisteredProducts = createMenuButton("Registered Products");
+        JButton btnSalesHistory = createMenuButton("Sales History");
         JButton btnLogout = createMenuButton("Logout");
 
         // Display Logged-in User
@@ -59,6 +60,7 @@ public class StaffDashboard extends JFrame {
         menuPanel.add(lblUser); // Add username label at the top
         menuPanel.add(btnProcessSales);
         menuPanel.add(btnRegisteredProducts);
+        menuPanel.add(btnSalesHistory);
         menuPanel.add(btnLogout);
 
         // Create Content Panel (Right Side)
@@ -75,6 +77,7 @@ public class StaffDashboard extends JFrame {
         // Button Actions
         btnProcessSales.addActionListener(e -> openProcessSales());
         btnRegisteredProducts.addActionListener(e -> openRegisteredProducts());
+        btnSalesHistory.addActionListener(e -> openSalesHistory());
         btnLogout.addActionListener(e -> {
             dispose();
             new StaffLoginRegister().setVisible(true);
@@ -125,6 +128,13 @@ public class StaffDashboard extends JFrame {
     private void openRegisteredProducts() {
         contentPanel.removeAll();
         contentPanel.add(new StaffRegisteredProductsPanel(), BorderLayout.CENTER);
+        contentPanel.revalidate();
+        contentPanel.repaint();
+    }
+    
+    private void openSalesHistory() {
+        contentPanel.removeAll();
+        contentPanel.add(new StaffSalesHistoryPanel(), BorderLayout.CENTER);
         contentPanel.revalidate();
         contentPanel.repaint();
     }

@@ -17,7 +17,7 @@ public class WelcomePage extends JFrame {
         setExtendedState(JFrame.MAXIMIZED_BOTH); // Full screen
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout()); 
 
         // Main Panel with Background Image
         JPanel mainPanel = new JPanel(new GridBagLayout()) {

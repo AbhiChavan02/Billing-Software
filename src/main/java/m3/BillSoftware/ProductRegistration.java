@@ -114,6 +114,8 @@ public class ProductRegistration extends JFrame {
             new AdminLoginRegister().setVisible(true);
         });
     }
+    
+    
 
     private JLabel loadLogo(String path, int width, int height) {
         File file = new File(path);
@@ -175,6 +177,7 @@ public class ProductRegistration extends JFrame {
         statsPanel.setBackground(new Color(241, 242, 246));
         statsPanel.setLayout(new BoxLayout(statsPanel, BoxLayout.Y_AXIS));
 
+        // Title Label
         JLabel titleLabel = new JLabel("Product Statistics");
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         titleLabel.setForeground(new Color(40, 58, 82));
@@ -183,6 +186,7 @@ public class ProductRegistration extends JFrame {
         statsPanel.add(titleLabel);
         statsPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
+        // Metrics Panel (Total Products, Available Stocks, Total Value, Sold Products)
         JPanel metricsPanel = new JPanel(new GridLayout(1, 4, 10, 10));
         metricsPanel.setBackground(new Color(241, 242, 246));
 
@@ -209,12 +213,12 @@ public class ProductRegistration extends JFrame {
 
                 String category = product.getString("category");
                 if ("Emetation".equalsIgnoreCase(category)) {
-//                    double purchasePrice = product.getDouble("purchasePrice");
                     double salePrice = product.getDouble("salesPrice");
                     totalValue += salePrice * stock;
                 } else {
                     double grams = product.getDouble("grams");
-//                    totalValue += grams * stock; // Assuming grams represents value for precious metals
+                    // Assuming grams represents value for precious metals
+                    totalValue += grams * stock;
                 }
             }
 
@@ -232,44 +236,42 @@ public class ProductRegistration extends JFrame {
             statsPanel.add(metricsPanel);
             statsPanel.add(Box.createRigidArea(new Dimension(0, 20)));
 
-            // Product cards
-            JPanel productCardPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-            productCardPanel.setBackground(new Color(241, 242, 246));
+            // Add a button above the tabbed pane
+            JButton btnRefresh = new JButton("Refresh");
+            btnRefresh.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            btnRefresh.setBackground(new Color(52, 152, 219));
+            btnRefresh.setForeground(Color.WHITE);
+            btnRefresh.setFocusPainted(false);
+            btnRefresh.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+            btnRefresh.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-            for (Document product : productCollection.find()) {
-                JPanel productCard = new JPanel();
-                productCard.setLayout(new BoxLayout(productCard, BoxLayout.Y_AXIS));
-                productCard.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-                productCard.setBackground(Color.WHITE);
-                productCard.setPreferredSize(new Dimension(180, 220));
+            btnRefresh.addActionListener(e -> openProductStats()); // Refresh the panel
 
-                // Product Image
-                ImageIcon productImage = loadProductImage(product.getString("productImagePath"));
-                JLabel imageLabel = new JLabel(productImage);
-                imageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                productCard.add(imageLabel);
-                productCard.add(Box.createRigidArea(new Dimension(0, 5)));
+            JPanel buttonPanel = new JPanel();
+            buttonPanel.setBackground(new Color(241, 242, 246));
+            buttonPanel.add(btnRefresh);
+            statsPanel.add(buttonPanel);
+            statsPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
-                // Product Details
-                addProductDetail(productCard, "Name: " + product.getString("productName"));
-                addProductDetail(productCard, "Category: " + product.getString("category"));
-                
-                String category = product.getString("category");
-                if ("Emetation".equalsIgnoreCase(category)) {
-                    addProductDetail(productCard, "Purchase: ₹" + product.getDouble("purchasePrice"));
-                    addProductDetail(productCard, "Sale: ₹" + product.getDouble("salesPrice"));
-                } else {
-                    addProductDetail(productCard, "Grams: " + product.getDouble("grams") + "g");
-                }
-                
-                addProductDetail(productCard, "Stock: " + product.getInteger("stockQuantity"));
-                
-                productCardPanel.add(productCard);
-            }
+            // Create a tabbed pane for All, Emetation, Gold, and Silver
+            JTabbedPane tabbedPane = new JTabbedPane();
+            tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            tabbedPane.setBackground(new Color(241, 242, 246));
+            tabbedPane.setForeground(new Color(40, 58, 82));
 
-            JScrollPane scrollPane = new JScrollPane(productCardPanel);
-            scrollPane.setPreferredSize(new Dimension(contentPanel.getWidth(), 400));
-            statsPanel.add(scrollPane);
+            // Panels for each category
+            JPanel allPanel = createCategoryPanel("All"); // New panel for "All"
+            JPanel emetationPanel = createCategoryPanel("Emetation");
+            JPanel goldPanel = createCategoryPanel("Gold");
+            JPanel silverPanel = createCategoryPanel("Silver");
+
+            // Add tabs to the tabbed pane
+            tabbedPane.addTab("All", allPanel);
+            tabbedPane.addTab("Emetation", emetationPanel);
+            tabbedPane.addTab("Gold", goldPanel);
+            tabbedPane.addTab("Silver", silverPanel);
+
+            statsPanel.add(tabbedPane);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -279,6 +281,96 @@ public class ProductRegistration extends JFrame {
         contentPanel.add(statsPanel);
         contentPanel.revalidate();
         contentPanel.repaint();
+    }
+
+    // Helper method to create a panel for a specific category
+    private JPanel createCategoryPanel(String category) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(241, 242, 246));
+
+        // Product cards
+        JPanel productCardPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        productCardPanel.setBackground(new Color(241, 242, 246));
+
+        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
+            MongoDatabase database = mongoClient.getDatabase("testDB");
+            MongoCollection<Document> productCollection = database.getCollection("Product");
+
+            // Filter products by category
+            for (Document product : productCollection.find()) {
+                String productCategory = product.getString("category");
+
+                // Show all products if "All" is selected
+                if ("All".equals(category) || category.equals(productCategory)) {
+                    JPanel productCard = new JPanel();
+                    productCard.setLayout(new BoxLayout(productCard, BoxLayout.Y_AXIS));
+                    productCard.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+                    productCard.setBackground(Color.WHITE);
+                    productCard.setPreferredSize(new Dimension(180, 220));
+
+                    // Product Image
+                    ImageIcon productImage = loadProductImage(product.getString("productImagePath"));
+                    JLabel imageLabel = new JLabel(productImage);
+                    imageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    productCard.add(imageLabel);
+                    productCard.add(Box.createRigidArea(new Dimension(0, 5)));
+
+                    // Product Details
+                    addProductDetail(productCard, "Name: " + product.getString("productName"));
+                    addProductDetail(productCard, "Category: " + productCategory);
+
+                    if ("Emetation".equalsIgnoreCase(productCategory)) {
+                        addProductDetail(productCard, "Purchase: ₹" + product.getDouble("purchasePrice"));
+                        addProductDetail(productCard, "Sale: ₹" + product.getDouble("salesPrice"));
+                    } else {
+                        addProductDetail(productCard, "Grams: " + product.getDouble("grams") + "g");
+                    }
+
+                    addProductDetail(productCard, "Stock: " + product.getInteger("stockQuantity"));
+
+                    productCardPanel.add(productCard);
+                }
+            }
+
+            JScrollPane scrollPane = new JScrollPane(productCardPanel);
+            scrollPane.setPreferredSize(new Dimension(contentPanel.getWidth(), 400));
+            panel.add(scrollPane, BorderLayout.CENTER);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error retrieving stats: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        return panel;
+    }
+
+    // Helper method to create a metric box
+    private JPanel createMetricBox(String title, String value, Color color) {
+        JPanel metricBox = new JPanel();
+        metricBox.setBackground(color);
+        metricBox.setLayout(new GridBagLayout());
+        metricBox.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+        metricBox.setPreferredSize(new Dimension(200, 100));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        // Title Label
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        titleLabel.setForeground(Color.WHITE);
+        metricBox.add(titleLabel, gbc);
+
+        // Value Label
+        gbc.gridy = 1;
+        JLabel valueLabel = new JLabel(value);
+        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        valueLabel.setForeground(Color.WHITE);
+        metricBox.add(valueLabel, gbc);
+
+        return metricBox;
     }
 
     // Helper method to add product details
@@ -302,35 +394,6 @@ public class ProductRegistration extends JFrame {
         }
         return new ImageIcon(new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB)); // Blank image
     }
-
-    private JPanel createMetricBox(String title, String value, Color color) {
-        JPanel metricBox = new JPanel();
-        metricBox.setBackground(color);
-        metricBox.setLayout(new GridBagLayout());  // Use GridBagLayout for centering
-        metricBox.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-        metricBox.setPreferredSize(new Dimension(90, 50));  // Reduced size for metric cards
-
-        // Create a constraints object for centering
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.insets = new Insets(5, 5, 5, 5);  // Add padding
-
-        // Title Label
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        titleLabel.setForeground(Color.WHITE);
-        metricBox.add(titleLabel, gbc);
-
-        // Value Label
-        gbc.gridy = 1;  // Move to the next row
-        JLabel valueLabel = new JLabel(value);
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        valueLabel.setForeground(Color.WHITE);
-        metricBox.add(valueLabel, gbc);
-
-        return metricBox;
-    } 
 
 
     // New function to load images from Cloudinary URL
@@ -458,6 +521,10 @@ class ProductRegistrationPanel extends JPanel {
         txtBarcode = createFormTextField(20);
         txtProductName = createFormTextField(20);
         txtStockQuantity = createFormTextField(20);
+        txtBarcode = createFormTextField(20);
+        txtBarcode.setEditable(false); // Make barcode field read-only
+        
+        generateNextBarcode();
 
         cmbCategory = new JComboBox<>(new String[]{"Emetation", "Gold", "Silver"});
         cmbCategory.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -491,7 +558,6 @@ class ProductRegistrationPanel extends JPanel {
         JButton btnRegister = createActionButton("Register Product", new Color(46, 204, 113)); // Green
         JButton btnClear = createActionButton("Clear", new Color(231, 76, 60)); // Red
 
-        // Layout
         gbc.gridwidth = 2;
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -566,6 +632,34 @@ class ProductRegistrationPanel extends JPanel {
 
         return panel;
     }
+    
+    
+    private void generateNextBarcode() {
+        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
+            MongoDatabase database = mongoClient.getDatabase("testDB");
+            MongoCollection<Document> productCollection = database.getCollection("Product");
+
+            int maxBarcode = 0;
+            // Iterate through all products to find the maximum barcode
+            for (Document product : productCollection.find()) {
+                String barcodeStr = product.getString("barcode");
+                try {
+                    int barcode = Integer.parseInt(barcodeStr);
+                    if (barcode > maxBarcode) {
+                        maxBarcode = barcode;
+                    }
+                } catch (NumberFormatException e) {
+                    System.err.println("Skipping invalid barcode: " + barcodeStr);
+                }
+            }
+            int nextBarcode = maxBarcode + 1;
+            txtBarcode.setText(String.valueOf(nextBarcode));
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Fallback to 1 if there's an error
+            txtBarcode.setText("1");
+        }
+    }
 
     private JPanel createGoldSilverPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
@@ -629,7 +723,7 @@ class ProductRegistrationPanel extends JPanel {
 
         // Step 2: Proceed with registering product
         try {
-            String barcode = txtBarcode.getText().trim();
+        	String barcode = txtBarcode.getText().trim();
             String productName = txtProductName.getText().trim();
             String category = (String) cmbCategory.getSelectedItem();
             String quantityText = txtStockQuantity.getText().trim();
@@ -744,7 +838,9 @@ class ProductRegistrationPanel extends JPanel {
         txtPurchasePrice.setText("");
         txtSalesPrice.setText("");
         txtGrams.setText("");
-        productImagePath = ""; // ✅ Reset the image path
+        productImagePath = "";
+        generateNextBarcode(); // Generate new barcode after clear
+        
     }
 
 
