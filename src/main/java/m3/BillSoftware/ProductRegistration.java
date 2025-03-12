@@ -323,8 +323,9 @@ public class ProductRegistration extends JFrame {
         panel.setBackground(new Color(241, 242, 246));
 
         // Product cards
-        JPanel productCardPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        JPanel productCardPanel = new JPanel();
         productCardPanel.setBackground(new Color(241, 242, 246));
+        productCardPanel.setLayout(new GridLayout(0, 6, 10, 10)); // 6 products per row
 
         try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
@@ -366,7 +367,10 @@ public class ProductRegistration extends JFrame {
                 }
             }
 
+            // Wrap the productCardPanel in a JScrollPane
             JScrollPane scrollPane = new JScrollPane(productCardPanel);
+            scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+            scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setPreferredSize(new Dimension(contentPanel.getWidth(), 400));
             panel.add(scrollPane, BorderLayout.CENTER);
 

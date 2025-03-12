@@ -7,10 +7,10 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
-import org.apache.http.ParseException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.printing.PDFPageable;
 import org.bson.Document;
+
 import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.table.*;
@@ -74,23 +74,23 @@ public class StaffSalesHistoryPanel extends JPanel {
     }
 
     private void createUI() {
-        // MARKER 1: Table model setup
-    	tableModel = new DefaultTableModel(new Object[]{
-    		    "Barcode", "Product Name", "Product Image", "Total Amount", 
-    		    "Final Price", "Profit", "Customer Name", "Seller", "Date", "Invoice"
-    		}, 0) {
-    		    @Override
-    		    public Class<?> getColumnClass(int column) {
-    		        return column == 2 ? ImageIcon.class : Object.class; // Column 2 is for images
-    		    }
-    		};
+        // Table model setup
+        tableModel = new DefaultTableModel(new Object[]{
+                "Barcode", "Product Name", "Product Image", "Total Amount", 
+                "Final Price", "Customer Name", "Seller", "Date", "Invoice"
+        }, 0) {
+            @Override
+            public Class<?> getColumnClass(int column) {
+                return column == 2 ? ImageIcon.class : Object.class; // Column 2 is for images
+            }
+        };
 
         salesTable = new JTable(tableModel);
         salesTable.setRowHeight(70);
         salesTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         salesTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-        // MARKER 2: Set cell borders
+        // Set cell borders
         salesTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
@@ -102,16 +102,16 @@ public class StaffSalesHistoryPanel extends JPanel {
         });
 
         salesTable.getColumnModel().getColumn(2).setPreferredWidth(90);
-        salesTable.getColumnModel().getColumn(9).setPreferredWidth(100);
+        salesTable.getColumnModel().getColumn(8).setPreferredWidth(100);
 
-        // MARKER 3: Set custom renderer and editor for the "Invoice" column
-        salesTable.getColumnModel().getColumn(9).setCellRenderer(new ButtonCellRenderer());
-        salesTable.getColumnModel().getColumn(9).setCellEditor(new ButtonCellEditor());
+        // Set custom renderer and editor for the "Invoice" column
+        salesTable.getColumnModel().getColumn(8).setCellRenderer(new ButtonCellRenderer());
+        salesTable.getColumnModel().getColumn(8).setCellEditor(new ButtonCellEditor());
 
         JScrollPane scrollPane = new JScrollPane(salesTable);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // MARKER 4: Filter panel setup
+        // Filter panel setup
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         filterPanel.setBackground(formColor);
         filterPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -140,7 +140,7 @@ public class StaffSalesHistoryPanel extends JPanel {
         });
         filterPanel.add(btnRefresh);
 
-        totalCollectionLabel = new JLabel("Total Collection: $0.00");
+        totalCollectionLabel = new JLabel("Total Collection: ₹0.00");
         filterPanel.add(totalCollectionLabel);
 
         add(filterPanel, BorderLayout.NORTH);
@@ -211,8 +211,7 @@ public class StaffSalesHistoryPanel extends JPanel {
         }
         return records;
     }
-    
-    
+
     private double getDoubleValue(Document document, String key) {
         if (document.containsKey(key)) {
             Object value = document.get(key);
@@ -232,7 +231,7 @@ public class StaffSalesHistoryPanel extends JPanel {
 
     private void populateTable(List<SalesRecord> records) {
         DefaultTableModel model = (DefaultTableModel) salesTable.getModel();
-        model.setRowCount(0);
+        model.setRowCount(0); // Clear the table
 
         Map<String, ImageIcon> imageCache = new HashMap<>();
 
@@ -253,6 +252,7 @@ public class StaffSalesHistoryPanel extends JPanel {
             model.addRow(row);
         }
 
+        // Calculate and display the total collection
         calculateTotalCollection();
     }
 
@@ -260,20 +260,12 @@ public class StaffSalesHistoryPanel extends JPanel {
         JButton downloadButton = createActionButton("Download", new Color(52, 152, 219));
         downloadButton.addActionListener(e -> generateInvoice(record, image));
 
-        // Calculate profit
-        double profit = record.finalPrice - record.totalPrice;
-
-        // Debug: Print the image details
-        System.out.println("Product: " + record.productName);
-        System.out.println("Image: " + image);
-
         return new Object[]{
             record.barcode,
             record.productName,
             image, // Ensure this is a valid ImageIcon
             record.totalPrice,
             record.finalPrice,
-            profit,
             record.customerName,
             record.staff,
             new SimpleDateFormat("EEE MMM dd").format(record.timestamp),
@@ -290,96 +282,52 @@ public class StaffSalesHistoryPanel extends JPanel {
         }
     }
 
-
     private void calculateTotalCollection() {
         double totalCollection = 0;
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            totalCollection += (Double) tableModel.getValueAt(i, 3);
+        DefaultTableModel model = (DefaultTableModel) salesTable.getModel();
+
+        for (int i = 0; i < model.getRowCount(); i++) {
+            double totalAmount = (Double) model.getValueAt(i, 3); // Total Amount column
+            totalCollection += totalAmount;
         }
-        totalCollectionLabel.setText("Total Collection: $" + String.format("%.2f", totalCollection));
+
+        // Update the total collection label
+        totalCollectionLabel.setText("Total Collection: ₹" + String.format("%.2f", totalCollection));
     }
 
     private void filterSalesByMonthAndSearch() {
         String selectedMonth = (String) monthComboBox.getSelectedItem();
         String searchText = searchField.getText().toLowerCase().trim();
-        double totalCollection = 0;
 
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            try {
-                // Updated column indexes
-                Object timestampObj = tableModel.getValueAt(i, 8); // Date column
-                String barcode = (String) tableModel.getValueAt(i, 0);
-                String productName = (String) tableModel.getValueAt(i, 1);
-                String customerName = (String) tableModel.getValueAt(i, 6);
-                Object priceObj = tableModel.getValueAt(i, 3); // Total Amount
+        // Fetch all sales records
+        List<SalesRecord> allRecords = fetchSalesData();
+        List<SalesRecord> filteredRecords = new ArrayList<>();
 
-                // Handle timestamp
-                String timestamp = null;
-                if (timestampObj instanceof String) {
-                    timestamp = (String) timestampObj;
-                } else if (timestampObj instanceof Date) {
-                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);
-                    dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-                    timestamp = dateFormat.format((Date) timestampObj);
-                } else if (timestampObj != null) {
-                    timestamp = timestampObj.toString();
-                }
+        // Filter records based on month and search text
+        for (SalesRecord record : allRecords) {
+            // Get the month from the record's timestamp
+            String recordMonth = new SimpleDateFormat("MMMM").format(record.timestamp);
 
-                // Validate timestamp
-                if (timestamp == null || timestamp.trim().isEmpty()) {
-                    throw new IllegalArgumentException("Empty or null timestamp in row " + (i + 1));
-                }
+            // Check if the record matches the selected month
+            boolean matchesMonth = selectedMonth.equals("All") || recordMonth.equalsIgnoreCase(selectedMonth);
 
-                // Null-safe conversions
-                barcode = (barcode != null) ? barcode.toLowerCase() : "";
-                productName = (productName != null) ? productName.toLowerCase() : "";
-                customerName = (customerName != null) ? customerName.toLowerCase() : "";
-                String totalPrice = (priceObj != null) ? priceObj.toString().toLowerCase() : "";
+            // Check if the record matches the search text
+            boolean matchesSearch = record.barcode.toLowerCase().contains(searchText) ||
+                    record.productName.toLowerCase().contains(searchText) ||
+                    record.customerName.toLowerCase().contains(searchText) ||
+                    String.valueOf(record.totalPrice).contains(searchText);
 
-                // Parse date with timezone handling
-                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);
-                dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-                Date date = dateFormat.parse(timestamp);
-
-                // Get month name from date
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(date);
-                String month = new SimpleDateFormat("MMMM", Locale.ENGLISH).format(cal.getTime());
-
-                // Determine matches
-                boolean matchesMonth = selectedMonth.equals("All") || month.equalsIgnoreCase(selectedMonth);
-                boolean matchesSearch = barcode.contains(searchText) || productName.contains(searchText)
-                        || customerName.contains(searchText) || totalPrice.contains(searchText);
-
-                // Handle row visibility and pricing
-                if (matchesMonth && matchesSearch) {
-                    salesTable.setRowHeight(i, 70);
-                    try {
-                        double price = (priceObj instanceof Number)
-                                ? ((Number) priceObj).doubleValue()
-                                : Double.parseDouble(totalPrice);
-                        totalCollection += price;
-                    } catch (NumberFormatException e) {
-                        System.err.println("Invalid price format in row " + (i + 1) + ": " + totalPrice);
-                        salesTable.setRowHeight(i, 1);  // Hide row with invalid price
-                    }
-                } else {
-                    salesTable.setRowHeight(i, 1);
-                }
-
-            } catch (Exception e) {
-                System.err.println("Error processing row " + (i + 1) + ": " + e.getMessage());
-                salesTable.setRowHeight(i, 1);  // Hide problematic row
+            // Add the record to the filtered list if it matches both conditions
+            if (matchesMonth && matchesSearch) {
+                filteredRecords.add(record);
             }
         }
 
-        // Update UI with error handling for number formatting
-        try {
-            totalCollectionLabel.setText("Total Collection: $" + String.format("%.2f", totalCollection));
-        } catch (IllegalFormatException e) {
-            System.err.println("Error formatting total collection: " + e.getMessage());
-            totalCollectionLabel.setText("Total Collection: Error");
-        }
+        // Update the table with the filtered records
+        populateTable(filteredRecords);
+
+        // Calculate and display the total collection for the filtered records
+        calculateTotalCollection();
     }
 
     private void generateInvoice(SalesRecord record, ImageIcon image) {
@@ -396,9 +344,9 @@ public class StaffSalesHistoryPanel extends JPanel {
             invoicePanel.add(new JLabel("<html><h2>Invoice</h2></html>"));
             invoicePanel.add(new JLabel("Barcode: " + record.barcode));
             invoicePanel.add(new JLabel("Product: " + record.productName));
-            invoicePanel.add(new JLabel("Total Price: " + record.totalPrice));
-            invoicePanel.add(new JLabel("Final Price: " + record.finalPrice));
-            invoicePanel.add(new JLabel("Savings: " + savings));
+            invoicePanel.add(new JLabel("Total Price: ₹" + record.totalPrice));
+            invoicePanel.add(new JLabel("Final Price: ₹" + record.finalPrice));
+            invoicePanel.add(new JLabel("Savings: ₹" + savings));
             invoicePanel.add(new JLabel("Customer: " + record.customerName));
             invoicePanel.add(new JLabel("Seller: " + record.staff));
             invoicePanel.add(new JLabel("Date: " + new SimpleDateFormat("EEE MMM dd").format(record.timestamp)));
@@ -548,8 +496,6 @@ public class StaffSalesHistoryPanel extends JPanel {
         return new ImageIcon(image);
     }
 
-
-
     private JButton createActionButton(String text, Color bgColor) {
         JButton btn = new JButton(text);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -656,9 +602,9 @@ public class StaffSalesHistoryPanel extends JPanel {
             String productName = (String) tableModel.getValueAt(row, 1);
             double totalAmount = (Double) tableModel.getValueAt(row, 3);
             double finalPrice = (Double) tableModel.getValueAt(row, 4);
-            String customerName = (String) tableModel.getValueAt(row, 6);
-            String seller = (String) tableModel.getValueAt(row, 7);
-            String timestamp = (String) tableModel.getValueAt(row, 8);
+            String customerName = (String) tableModel.getValueAt(row, 5);
+            String seller = (String) tableModel.getValueAt(row, 6);
+            String timestamp = (String) tableModel.getValueAt(row, 7);
 
             // Create a SalesRecord object
             SalesRecord record = new SalesRecord(

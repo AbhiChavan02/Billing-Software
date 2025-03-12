@@ -156,17 +156,11 @@ public class SalesHistoryPanel extends JPanel {
 
         filterPanel.add(topRow);
 
-        // Bottom row for total collection, profit, and sort buttons
+        // Bottom row for sort buttons, total collection, and profit
         JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
         bottomRow.setBackground(formColor);
 
-        totalCollectionLabel = new JLabel("Total Collection: $0.00");
-        bottomRow.add(totalCollectionLabel);
-
-        totalProfitLabel = new JLabel("Total Profit (Emetation): $0.00");
-        bottomRow.add(totalProfitLabel);
-
-        // Sort buttons
+        // Add sort buttons
         JButton btnSortGold = createActionButton("Sort Gold Sales", new Color(241, 196, 15)); // Yellow
         btnSortGold.addActionListener(e -> sortSalesByCategory("Gold"));
         bottomRow.add(btnSortGold);
@@ -178,6 +172,13 @@ public class SalesHistoryPanel extends JPanel {
         JButton btnSortSilver = createActionButton("Sort Silver Sales", new Color(231, 76, 60)); // Red
         btnSortSilver.addActionListener(e -> sortSalesByCategory("Silver"));
         bottomRow.add(btnSortSilver);
+
+        // Add total collection and profit labels
+        totalCollectionLabel = new JLabel("Total Collection: ₹0.00");
+        bottomRow.add(totalCollectionLabel);
+
+        totalProfitLabel = new JLabel("Expense (Emetation): ₹0.00");
+        bottomRow.add(totalProfitLabel);
 
         filterPanel.add(bottomRow);
 
@@ -320,6 +321,16 @@ public class SalesHistoryPanel extends JPanel {
         calculateTotalCollectionAndProfit();
     }
 
+
+    private void updateRowImage(SalesRecord record, ImageIcon image) {
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            if (tableModel.getValueAt(i, 2).equals(record.productName)) { // Check product name column
+                tableModel.setValueAt(image, i, 3); // Update product image column
+                break;
+            }
+        }
+    }
+
     private Object[] createTableRow(SalesRecord record, ImageIcon image) {
         JButton downloadButton = createActionButton("Download", new Color(52, 152, 219));
         downloadButton.addActionListener(e -> generateInvoice(record, image));
@@ -329,26 +340,17 @@ public class SalesHistoryPanel extends JPanel {
 
         return new Object[]{
                 record.barcode,
-                record.category, // Add product type
+                record.category,
                 record.productName,
-                image, // Ensure this is a valid ImageIcon
-                record.totalPrice,
-                record.finalPrice,
-                profit,
+                image,
+                record.totalPrice, // Store as Double
+                record.finalPrice, // Store as Double
+                profit, // Store as Double
                 record.customerName,
                 record.staff,
                 new SimpleDateFormat("EEE MMM dd").format(record.timestamp),
                 downloadButton
         };
-    }
-
-    private void updateRowImage(SalesRecord record, ImageIcon image) {
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            if (tableModel.getValueAt(i, 2).equals(record.productName)) { // Check product name column
-                tableModel.setValueAt(image, i, 3); // Update product image column
-                break;
-            }
-        }
     }
 
     private void calculateTotalCollectionAndProfit() {
@@ -367,8 +369,9 @@ public class SalesHistoryPanel extends JPanel {
             }
         }
 
-        totalCollectionLabel.setText("Total Collection: $" + String.format("%.2f", totalCollection));
-        totalProfitLabel.setText("Total Profit (Emetation): $" + String.format("%.2f", totalProfit));
+        // Update labels with ₹ sign
+        totalCollectionLabel.setText("Total Collection: ₹" + String.format("%.2f", totalCollection));
+        totalProfitLabel.setText("Total Profit (Emetation): ₹" + String.format("%.2f", totalProfit));
     }
 
     private void sortSalesByCategory(String category) {
@@ -424,9 +427,9 @@ public class SalesHistoryPanel extends JPanel {
             invoicePanel.add(new JLabel("Barcode: " + record.barcode));
             invoicePanel.add(new JLabel("Category: " + record.category));
             invoicePanel.add(new JLabel("Product: " + record.productName));
-            invoicePanel.add(new JLabel("Total Price: " + record.totalPrice));
-            invoicePanel.add(new JLabel("Final Price: " + record.finalPrice));
-            invoicePanel.add(new JLabel("Savings: " + savings));
+            invoicePanel.add(new JLabel("Total Price: ₹" + String.format("%.2f", record.totalPrice))); // Add ₹ sign
+            invoicePanel.add(new JLabel("Final Price: ₹" + String.format("%.2f", record.finalPrice))); // Add ₹ sign
+            invoicePanel.add(new JLabel("Savings: ₹" + String.format("%.2f", savings))); // Add ₹ sign
             invoicePanel.add(new JLabel("Customer: " + record.customerName));
             invoicePanel.add(new JLabel("Seller: " + record.staff));
             invoicePanel.add(new JLabel("Date: " + new SimpleDateFormat("EEE MMM dd").format(record.timestamp)));
@@ -498,9 +501,9 @@ public class SalesHistoryPanel extends JPanel {
             pdfDoc.add(new Paragraph("Barcode: " + record.barcode));
             pdfDoc.add(new Paragraph("Category: " + record.category));
             pdfDoc.add(new Paragraph("Product Name: " + record.productName));
-            pdfDoc.add(new Paragraph("Total Price: ₹" + record.totalPrice));
-            pdfDoc.add(new Paragraph("Final Price: ₹" + record.finalPrice));
-            pdfDoc.add(new Paragraph("Savings: ₹" + savings));
+            pdfDoc.add(new Paragraph("Total Price: ₹" + String.format("%.2f", record.totalPrice))); // Add ₹ sign
+            pdfDoc.add(new Paragraph("Final Price: ₹" + String.format("%.2f", record.finalPrice))); // Add ₹ sign
+            pdfDoc.add(new Paragraph("Savings: ₹" + String.format("%.2f", savings))); // Add ₹ sign
             pdfDoc.add(new Paragraph("Customer Name: " + record.customerName));
             pdfDoc.add(new Paragraph("Seller: " + record.staff));
             pdfDoc.add(new Paragraph("Date: " + new SimpleDateFormat("EEE MMM dd").format(record.timestamp)));
