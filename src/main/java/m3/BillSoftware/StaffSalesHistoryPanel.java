@@ -557,7 +557,7 @@ public class StaffSalesHistoryPanel extends JPanel {
     private class ButtonCellRenderer extends JButton implements TableCellRenderer {
         public ButtonCellRenderer() {
             setOpaque(true);
-            setBackground(new Color(255, 0, 0)); // Green color for the button
+            setBackground(new Color(231, 76, 60)); // Red color for the button
             setForeground(Color.WHITE);
             setText("Download PDF");
             setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -569,9 +569,9 @@ public class StaffSalesHistoryPanel extends JPanel {
                 boolean isSelected, boolean hasFocus, int row, int column) {
             // Customize appearance based on selection
             if (isSelected) {
-                setBackground(new Color(39, 174, 96)); // Darker green when selected
+                setBackground(new Color(192, 57, 43)); // Darker red when selected
             } else {
-                setBackground(new Color(46, 204, 113)); // Default green
+                setBackground(new Color(231, 76, 60)); // Default red
             }
             return this;
         }
@@ -583,7 +583,7 @@ public class StaffSalesHistoryPanel extends JPanel {
 
         public ButtonCellEditor() {
             button = new JButton("Download PDF");
-            button.setBackground(new Color(46, 204, 113)); // Green color for the button
+            button.setBackground(new Color(231, 76, 60)); // Red color for the button
             button.setForeground(Color.WHITE);
             button.setFont(new Font("Segoe UI", Font.BOLD, 12));
             button.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY)); // Add border
