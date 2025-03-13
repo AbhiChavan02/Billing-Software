@@ -467,6 +467,7 @@ public class ProcessSalesPanel extends JPanel {
     
  // ✅ Function to calculate GST and Final Amount correctly
  // ====== 1. Update the updateGSTandFinalAmount Method ======
+ // ✅ Updated GST rates (Emetation now 3%)
     private void updateGSTandFinalAmount(double totalAmount, String category) {
         // Calculate Making Charges
         double makingChargesRate = ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) ? 0.14 : 0.0;
@@ -475,9 +476,10 @@ public class ProcessSalesPanel extends JPanel {
         // New total after adding making charges
         double newTotal = totalAmount + makingCharges;
 
-        // Calculate GST on the new total
+        // Updated GST rates (Changed Emetation from 5% to 3%)
         double gstRate = ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) ? 0.03 :
-                         ("Emetation".equalsIgnoreCase(category)) ? 0.05 : 0.18;
+                        ("Emetation".equalsIgnoreCase(category)) ? 0.03 : 0.18; // Changed here
+        
         double gstAmount = newTotal * gstRate;
 
         // Final amount including GST

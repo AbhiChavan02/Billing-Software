@@ -205,7 +205,8 @@ public class StaffSalesHistoryPanel extends JPanel {
                 getDoubleValue(sale, "finalPrice"), // Use getDoubleValue for finalPrice
                 sale.getString("customerName"),
                 seller,
-                sale.getDate("timestamp")
+                sale.getDate("timestamp"),
+                product.getString("category") // Add category
             );
             records.add(record);
         }
@@ -334,6 +335,11 @@ public class StaffSalesHistoryPanel extends JPanel {
         try {
             double savings = record.totalPrice - record.finalPrice;
 
+            // Calculate GST for Emetation products
+            double gstRate = "Emetation".equalsIgnoreCase(record.category) ? 0.03 : 0.18; // 3% for Emetation, 18% for others
+            double gstAmount = record.finalPrice * gstRate;
+            double totalWithGST = record.finalPrice + gstAmount;
+
             JDialog invoiceDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Invoice", true);
             invoiceDialog.setLayout(new BorderLayout());
 
@@ -346,6 +352,8 @@ public class StaffSalesHistoryPanel extends JPanel {
             invoicePanel.add(new JLabel("Product: " + record.productName));
             invoicePanel.add(new JLabel("Total Price: ₹" + record.totalPrice));
             invoicePanel.add(new JLabel("Final Price: ₹" + record.finalPrice));
+            invoicePanel.add(new JLabel("GST (" + (gstRate * 100) + "%): ₹" + gstAmount));
+            invoicePanel.add(new JLabel("Total with GST: ₹" + totalWithGST));
             invoicePanel.add(new JLabel("Savings: ₹" + savings));
             invoicePanel.add(new JLabel("Customer: " + record.customerName));
             invoicePanel.add(new JLabel("Seller: " + record.staff));
@@ -361,7 +369,7 @@ public class StaffSalesHistoryPanel extends JPanel {
             invoicePanel.add(downloadButton);
 
             downloadButton.addActionListener(e -> {
-                downloadInvoiceAsPDF(record, image);
+                downloadInvoiceAsPDF(record, image, gstAmount, totalWithGST);
                 JOptionPane.showMessageDialog(invoiceDialog, "Invoice Downloaded!", "Success",
                         JOptionPane.INFORMATION_MESSAGE);
             });
@@ -383,7 +391,7 @@ public class StaffSalesHistoryPanel extends JPanel {
         }
     }
 
-    private void downloadInvoiceAsPDF(SalesRecord record, ImageIcon image) {
+    private void downloadInvoiceAsPDF(SalesRecord record, ImageIcon image, double gstAmount, double totalWithGST) {
         try {
             String[] options = { "Print", "E-Invoice" };
             int choice = JOptionPane.showOptionDialog(this, "Select an option:", "Download Invoice",
@@ -419,6 +427,8 @@ public class StaffSalesHistoryPanel extends JPanel {
             pdfDoc.add(new Paragraph("Product Name: " + record.productName));
             pdfDoc.add(new Paragraph("Total Price: ₹" + record.totalPrice));
             pdfDoc.add(new Paragraph("Final Price: ₹" + record.finalPrice));
+            pdfDoc.add(new Paragraph("GST (" + (gstAmount / record.finalPrice * 100) + "%): ₹" + gstAmount));
+            pdfDoc.add(new Paragraph("Total with GST: ₹" + totalWithGST));
             pdfDoc.add(new Paragraph("Savings: ₹" + savings));
             pdfDoc.add(new Paragraph("Customer Name: " + record.customerName));
             pdfDoc.add(new Paragraph("Seller: " + record.staff));
@@ -527,10 +537,11 @@ public class StaffSalesHistoryPanel extends JPanel {
         final String customerName;
         final String staff;
         final Date timestamp;
+        final String category; // Add category field
 
         SalesRecord(String barcode, String productName, String productImagePath,
                     double totalPrice, double finalPrice, String customerName,
-                    String staff, Date timestamp) {
+                    String staff, Date timestamp, String category) { // Add category parameter
             this.barcode = barcode;
             this.productName = productName;
             this.productImagePath = productImagePath;
@@ -539,6 +550,7 @@ public class StaffSalesHistoryPanel extends JPanel {
             this.customerName = customerName;
             this.staff = staff;
             this.timestamp = timestamp;
+            this.category = category; // Initialize category
         }
     }
 
@@ -608,11 +620,11 @@ public class StaffSalesHistoryPanel extends JPanel {
 
             // Create a SalesRecord object
             SalesRecord record = new SalesRecord(
-                barcode, productName, "", totalAmount, finalPrice, customerName, seller, new Date()
+                barcode, productName, "", totalAmount, finalPrice, customerName, seller, new Date(), ""
             );
 
             // Generate and download the PDF
-            downloadInvoiceAsPDF(record, new ImageIcon());
+            downloadInvoiceAsPDF(record, new ImageIcon(), 0, 0);
         }
     }
 

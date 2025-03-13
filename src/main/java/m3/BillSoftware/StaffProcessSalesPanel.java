@@ -337,14 +337,23 @@ public class StaffProcessSalesPanel extends JPanel {
     }
 
     private void updateGSTandFinalAmount(double totalAmount, String category) {
-        double gstRate = category.equalsIgnoreCase("Gold") || category.equalsIgnoreCase("Silver") ? 0.03 :
-                        category.equalsIgnoreCase("Emetation") ? 0.05 : 0.18;
-        double makingChargeRate = category.equalsIgnoreCase("Gold") || category.equalsIgnoreCase("Silver") ? 0.10 : 0.0;
+        // GST rate is 3% for Emetation, 3% for Gold/Silver, and 18% for others
+        double gstRate = "Emetation".equalsIgnoreCase(category) ? 0.03 :
+                        ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) ? 0.03 : 0.18;
 
+        // Making charges are 10% for Gold/Silver, 0% for others
+        double makingChargeRate = ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) ? 0.10 : 0.0;
+
+        // Calculate making charges
         double makingCharges = totalAmount * makingChargeRate;
-        double gstAmount = (totalAmount + makingCharges) * gstRate;
+
+        // Calculate GST on the total amount (excluding making charges)
+        double gstAmount = totalAmount * gstRate;
+
+        // Calculate final amount
         double finalAmount = totalAmount + makingCharges + gstAmount;
 
+        // Update text fields
         txtGstAmount.setText(String.format("%.2f", gstAmount));
         txtMakingCharges.setText(String.format("%.2f", makingCharges));
         txtTotalAmount.setText(String.format("%.2f", finalAmount));
