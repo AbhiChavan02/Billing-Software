@@ -32,6 +32,7 @@ public class WelcomePage extends JFrame {
                 }
             }
         };
+        
         mainPanel.setOpaque(false);
 
         GridBagConstraints gbc = new GridBagConstraints();
