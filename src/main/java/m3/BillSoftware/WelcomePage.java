@@ -18,7 +18,6 @@ public class WelcomePage extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout()); 
-        
 
         // Main Panel with Background Image
         JPanel mainPanel = new JPanel(new GridBagLayout()) {
@@ -33,7 +32,6 @@ public class WelcomePage extends JFrame {
                 }
             }
         };
-        
         mainPanel.setOpaque(false);
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -175,3 +173,4 @@ public class WelcomePage extends JFrame {
         SwingUtilities.invokeLater(WelcomePage::new);
     }
 }
+

@@ -83,13 +83,15 @@ public class ProductRegistration extends JFrame {
         JButton btnSalesHistory = createMenuButton("Sales History");
         JButton btnTotalStock = createMenuButton("Available Stock");
         JButton btnLogout = createMenuButton("Logout");
+        JButton btnDashboard = createMenuButton("Sales Dashboard");
 
         gbc.gridy = 1; menuPanel.add(btnRegisterProduct, gbc);
         gbc.gridy = 2; menuPanel.add(btnProcessSales, gbc);
         gbc.gridy = 3; menuPanel.add(btnRegisteredProduct, gbc);
         gbc.gridy = 4; menuPanel.add(btnSalesHistory, gbc);
         gbc.gridy = 5; menuPanel.add(btnTotalStock, gbc);
-        gbc.gridy = 6; menuPanel.add(btnLogout, gbc);
+        gbc.gridy = 7; menuPanel.add(btnLogout, gbc);
+        gbc.gridy = 6; menuPanel.add(btnDashboard, gbc);
 
         // Create Content Panel (Right Side)
         contentPanel = new JPanel(new BorderLayout());
@@ -108,6 +110,7 @@ public class ProductRegistration extends JFrame {
         btnRegisteredProduct.addActionListener(e -> openRegisteredProducts());
         btnSalesHistory.addActionListener(e -> openSalesHistory());
         btnTotalStock.addActionListener(e -> openProductStats());
+        btnDashboard.addActionListener(e -> openSalesDashboard());
 
         btnLogout.addActionListener(e -> {
             dispose();
@@ -151,6 +154,17 @@ public class ProductRegistration extends JFrame {
             }
         });
         return btn;
+    }
+    
+    private void openSalesDashboard() {
+        contentPanel.removeAll();
+        contentPanel.setLayout(new BorderLayout());
+        
+        DashboardGraph dashboard = new DashboardGraph();
+        contentPanel.add(dashboard, BorderLayout.CENTER);
+        
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
 
     private void openProductRegistration() {

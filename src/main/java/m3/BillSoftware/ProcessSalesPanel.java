@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.print.PrinterJob;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -679,7 +680,7 @@ public class ProcessSalesPanel extends JPanel {
     private void generateInvoice(double totalPrice, double finalPrice, double savings) {
         JDialog invoiceDialog = new JDialog();
         invoiceDialog.setTitle("Invoice");
-        invoiceDialog.setSize(500, 700);
+        invoiceDialog.setSize(595, 842); // A4 dimensions in pixels (595x842)
         invoiceDialog.setLayout(new BorderLayout());
 
         JTextPane invoiceContent = new JTextPane();
@@ -687,7 +688,7 @@ public class ProcessSalesPanel extends JPanel {
         invoiceContent.setEditable(false);
 
         StringBuilder html = new StringBuilder();
-        html.append("<html><body style='padding:20px;'>");
+        html.append("<html><body style='padding:20px; font-family:Arial;'>");
         html.append("<h1 style='text-align:center;'>RajLaxhmi Jewelers</h1>");
         html.append("<hr>");
         html.append("<p><b>Date:</b> ").append(new SimpleDateFormat("dd-MM-yyyy HH:mm").format(new Date())).append("</p>");
@@ -731,7 +732,7 @@ public class ProcessSalesPanel extends JPanel {
 
         JButton btnDownloadPDF = new JButton("Download PDF");
         btnDownloadPDF.addActionListener(e -> {
-            downloadInvoiceAsPDF(totalPrice, finalPrice, savings, fetchCloudinaryImageUrl());
+            downloadInvoiceAsPDF(txtProductName.getText(),txtBarcode.getText(),txtBarcode.getText(),totalPrice, finalPrice, savings, fetchCloudinaryImageUrl());
         });
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
@@ -742,94 +743,102 @@ public class ProcessSalesPanel extends JPanel {
         invoiceDialog.add(buttonPanel, BorderLayout.SOUTH);
         invoiceDialog.setVisible(true);
     }
+private void downloadInvoiceAsPDF(String productName,String barcode,String qty,double totalPrice, double finalPrice, double savings, String cloudinaryImageUrl) {
+    JFileChooser fileChooser = new JFileChooser();
+    fileChooser.setDialogTitle("Save Invoice as PDF");
 
-    private void downloadInvoiceAsPDF(double totalPrice, double finalPrice, double savings, String cloudinaryImageUrl) {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Save Invoice as PDF");
-
-        if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            File file = fileChooser.getSelectedFile();
-            if (!file.getName().toLowerCase().endsWith(".pdf")) {
-                file = new File(file.getAbsolutePath() + ".pdf");
-            }
-
-            com.itextpdf.text.Document pdfDoc = new com.itextpdf.text.Document();
-            try (FileOutputStream fos = new FileOutputStream(file)) {
-                PdfWriter.getInstance(pdfDoc, fos);
-                pdfDoc.open();
-
-                // Define fonts
-                BaseFont baseFont = BaseFont.createFont(BaseFont.HELVETICA_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED);
-                Font titleFont = new Font(baseFont, 20, Font.BOLD, BaseColor.BLACK);
-                Font normalFont = new Font(Font.FontFamily.HELVETICA, 12, Font.NORMAL, BaseColor.BLACK);
-                Font boldFont = new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD, BaseColor.BLACK);
-
-                // Ensure text field values are not empty
-                String customerName = txtName.getText().trim().isEmpty() ? "Not Provided" : txtName.getText().trim();
-                String productName = txtProductName.getText().trim().isEmpty() ? "Not Provided" : txtProductName.getText().trim();
-                String barcode = txtBarcode.getText().trim().isEmpty() ? "Not Provided" : txtBarcode.getText().trim();
-                String quantity = txtQuantity.getText().trim().isEmpty() ? "Not Provided" : txtQuantity.getText().trim();
-
-             
-
-                // Add Invoice Title
-                Paragraph title = new Paragraph("ABC Jewelers - Invoice", titleFont);
-                title.setAlignment(Element.ALIGN_CENTER);
-                pdfDoc.add(title);
-                pdfDoc.add(new Paragraph("--------------------------------------------------------------"));
-
-                // Add Customer and Date
-                pdfDoc.add(new Paragraph("Date: " + new SimpleDateFormat("dd-MM-yyyy HH:mm").format(new Date())));
-                pdfDoc.add(new Paragraph("Customer Name: " + customerName));
-                pdfDoc.add(new Paragraph("\n"));
-
-                // Fetch image from MongoDB
-                String imageBase64 = fetchImageFromMongoDB(barcode); // Fetch image from MongoDB
-                if (imageBase64 != null && !imageBase64.isEmpty()) {
-                    byte[] imageBytes = Base64.getDecoder().decode(imageBase64);
-                    com.itextpdf.text.Image productImage = com.itextpdf.text.Image.getInstance(imageBytes); // Use iText Image
-                    productImage.scaleToFit(100, 100);
-                    productImage.setAlignment(Element.ALIGN_CENTER);
-                    pdfDoc.add(productImage);
-                }
-
-                // Create Table for Product Details
-                PdfPTable table = new PdfPTable(2);
-                table.setWidthPercentage(100);
-
-                table.addCell(new PdfPCell(new Phrase("Product Name", boldFont)));
-                table.addCell(new PdfPCell(new Phrase(productName, normalFont)));
-
-                table.addCell(new PdfPCell(new Phrase("Barcode", boldFont)));
-                table.addCell(new PdfPCell(new Phrase(barcode, normalFont)));
-
-                table.addCell(new PdfPCell(new Phrase("Quantity", boldFont)));
-                table.addCell(new PdfPCell(new Phrase(quantity, normalFont)));
-
-                table.addCell(new PdfPCell(new Phrase("Total Price", boldFont)));
-                table.addCell(new PdfPCell(new Phrase("₹" + Totalprice, normalFont)));
-
-                table.addCell(new PdfPCell(new Phrase("Final Price", boldFont)));
-                table.addCell(new PdfPCell(new Phrase("₹" + finalPrice, normalFont)));
-
-                table.addCell(new PdfPCell(new Phrase("You Saved", boldFont)));
-                table.addCell(new PdfPCell(new Phrase("₹" + savings, normalFont)));
-
-                pdfDoc.add(table);
-
-                // Add Thank You Message
-                pdfDoc.add(new Paragraph("\n\nThank you for shopping with ABC Jewelers!", boldFont));
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "Error saving PDF: " + e.getMessage());
-            } finally {
-                pdfDoc.close();
-            }
-
-            JOptionPane.showMessageDialog(this, "Invoice saved as PDF: " + file.getAbsolutePath());
+    if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+        File file = fileChooser.getSelectedFile();
+        if (!file.getName().toLowerCase().endsWith(".pdf")) {
+            file = new File(file.getAbsolutePath() + ".pdf");
         }
+
+        // Create the PDF document with A4 size
+        com.itextpdf.text.Document pdfDoc = new com.itextpdf.text.Document(PageSize.A4);
+        FileOutputStream fos = null;
+        PdfWriter writer = null;
+
+        try {
+            fos = new FileOutputStream(file);
+            writer = PdfWriter.getInstance(pdfDoc, fos);
+            pdfDoc.open();
+
+            // Define fonts
+            BaseFont baseFont = BaseFont.createFont(BaseFont.HELVETICA_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED);
+            Font titleFont = new Font(baseFont, 20, Font.BOLD, BaseColor.BLACK);
+            Font normalFont = new Font(Font.FontFamily.HELVETICA, 12, Font.NORMAL, BaseColor.BLACK);
+            Font boldFont = new Font(Font.FontFamily.HELVETICA, 12, Font.BOLD, BaseColor.BLACK);
+
+
+            // Add Invoice Title
+            Paragraph title = new Paragraph("RajLaxhmi Jewelers - Invoice", titleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            pdfDoc.add(title);
+            pdfDoc.add(new Paragraph("--------------------------------------------------------------"));
+
+            // Add Customer and Date
+            pdfDoc.add(new Paragraph("Date: " + new SimpleDateFormat("dd-MM-yyyy HH:mm").format(new Date())));
+            pdfDoc.add(new Paragraph("Customer Name: " + txtName.getText().toString()));
+            pdfDoc.add(new Paragraph("\n"));
+
+            // Fetch image from MongoDB
+            String imageBase64 = fetchImageFromMongoDB(barcode); // Fetch image from MongoDB
+            if (imageBase64 != null && !imageBase64.isEmpty()) {
+                byte[] imageBytes = Base64.getDecoder().decode(imageBase64);
+                com.itextpdf.text.Image productImage = com.itextpdf.text.Image.getInstance(imageBytes); // Use iText Image
+                productImage.scaleToFit(100, 100);
+                productImage.setAlignment(Element.ALIGN_CENTER);
+                pdfDoc.add(productImage);
+            }
+
+            // Create Table for Product Details
+            PdfPTable table = new PdfPTable(2);
+            table.setWidthPercentage(100);
+
+            table.addCell(new PdfPCell(new Phrase("Product Name", boldFont)));
+            table.addCell(new PdfPCell(new Phrase(productName, normalFont)));
+
+            table.addCell(new PdfPCell(new Phrase("Barcode", boldFont)));
+            table.addCell(new PdfPCell(new Phrase(barcode, normalFont)));
+
+            table.addCell(new PdfPCell(new Phrase("Quantity", boldFont)));
+            table.addCell(new PdfPCell(new Phrase(qty, normalFont)));
+
+            table.addCell(new PdfPCell(new Phrase("Total Price", boldFont)));
+            table.addCell(new PdfPCell(new Phrase("₹" + totalPrice, normalFont)));
+
+            table.addCell(new PdfPCell(new Phrase("Final Price", boldFont)));
+            table.addCell(new PdfPCell(new Phrase("₹" + finalPrice, normalFont)));
+
+            table.addCell(new PdfPCell(new Phrase("You Saved", boldFont)));
+            table.addCell(new PdfPCell(new Phrase("₹" + savings, normalFont)));
+
+            pdfDoc.add(table);
+
+            // Add Thank You Message
+            pdfDoc.add(new Paragraph("\n\nThank you for shopping with RajLaxhmi Jewelers!", boldFont));
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error saving PDF: " + e.getMessage());
+        } finally {
+            if (pdfDoc != null && pdfDoc.isOpen()) {
+                pdfDoc.close(); // Close the document
+            }
+            if (writer != null) {
+                writer.close(); // Close the writer
+            }
+            if (fos != null) {
+                try {
+                    fos.close(); // Close the FileOutputStream
+                } catch (IOException e) {
+                    JOptionPane.showMessageDialog(this, "Error closing stream: " + e.getMessage());
+                }
+            }
+        }
+
+        JOptionPane.showMessageDialog(this, "Invoice saved as PDF: " + file.getAbsolutePath());
     }
-
-
+}
+    
     private void clearFields() {
         txtBarcode.setText("");
         txtProductName.setText("");
