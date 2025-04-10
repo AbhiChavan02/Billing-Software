@@ -316,7 +316,7 @@ public class RegisteredProductsPanel extends JPanel {
         try {
             tableModel.setRowCount(0);
             for (Document product : productCollection.find()) {
-                String barcode = getStringFromDocument(product, "barcode");
+                String barcodeNumber = getStringFromDocument(product, "barcodeNumber");
                 String productName = getStringFromDocument(product, "productName");
                 String category = getStringFromDocument(product, "category");
                 Double purchasePrice = null;
@@ -335,7 +335,7 @@ public class RegisteredProductsPanel extends JPanel {
                 ImageIcon productImage = loadProductImage(imageUrl);
 
                 tableModel.addRow(new Object[]{
-                    barcode != null ? barcode : "N/A",
+                    barcodeNumber != null ? barcodeNumber : "N/A",
                     productName != null ? productName : "N/A",
                     productImage,
                     category != null ? category : "N/A",
@@ -399,7 +399,7 @@ public class RegisteredProductsPanel extends JPanel {
         try {
             Document query = new Document();
             switch (criteria) {
-                case "Barcode": query.append("barcode", searchValue); break;
+                case "Barcode": query.append("barcodeNumber", searchValue); break;
                 case "Product Name": query.append("productName", new Document("$regex", searchValue).append("$options", "i")); break;
                 case "Category": query.append("category", new Document("$regex", searchValue).append("$options", "i")); break;
                 case "Purchase Price": query.append("purchasePrice", Double.parseDouble(searchValue)); break;
@@ -410,7 +410,7 @@ public class RegisteredProductsPanel extends JPanel {
 
             tableModel.setRowCount(0);
             for (Document product : productCollection.find(query)) {
-                String barcode = getStringFromDocument(product, "barcode");
+                String barcodeNumber = getStringFromDocument(product, "barcodeNumber");
                 String productName = getStringFromDocument(product, "productName");
                 String category = getStringFromDocument(product, "category");
 
@@ -430,7 +430,7 @@ public class RegisteredProductsPanel extends JPanel {
                 ImageIcon productImage = loadProductImage(imageUrl);
 
                 tableModel.addRow(new Object[]{
-                        barcode != null ? barcode : "N/A",
+                        barcodeNumber != null ? barcodeNumber : "N/A",
                         productName != null ? productName : "N/A",
                         productImage,
                         category != null ? category : "N/A",
@@ -457,7 +457,7 @@ public class RegisteredProductsPanel extends JPanel {
             MongoCollection<Document> productCollection = database.getCollection("Product");
 
             // Get the data from the selected row
-            String barcode = (String) tableModel.getValueAt(rowIndex, 0); // Barcode
+            String barcodeNumber = (String) tableModel.getValueAt(rowIndex, 0); // Barcode
             String productName = (String) tableModel.getValueAt(rowIndex, 1); // Product Name
             String category = (String) tableModel.getValueAt(rowIndex, 3); // Category
             Double purchasePrice = (Double) tableModel.getValueAt(rowIndex, 4); // Purchase Price
@@ -522,7 +522,7 @@ public class RegisteredProductsPanel extends JPanel {
             tableModel.setValueAt(newStock, rowIndex, 7);
 
             // Create the filter for finding the product in the database
-            Document filter = new Document("barcode", barcode);
+            Document filter = new Document("barcodeNumber", barcodeNumber);
 
             // Create the update document based on the category
             Document updatedProduct = new Document()
@@ -558,15 +558,15 @@ public class RegisteredProductsPanel extends JPanel {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> productCollection = database.getCollection("Product");
 
-            // Get the barcode of the selected product
-            String barcode = (String) tableModel.getValueAt(rowIndex, 0);
-            if (barcode == null || barcode.isEmpty()) {
+            // Get the barcodeNumber of the selected product
+            String barcodeNumber = (String) tableModel.getValueAt(rowIndex, 0);
+            if (barcodeNumber == null || barcodeNumber.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Error: Barcode is invalid.");
-                return; // Exit if barcode is invalid
+                return; // Exit if barcodeNumber is invalid
             }
 
             // Create the filter for finding the product in the database
-            Document filter = new Document("barcode", barcode);
+            Document filter = new Document("barcodeNumber", barcodeNumber);
 
             // Perform the delete operation in the database
             DeleteResult result = productCollection.deleteOne(filter);
@@ -579,7 +579,7 @@ public class RegisteredProductsPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Product deleted successfully!");
             } else {
                 // Show error message if no product was deleted
-                JOptionPane.showMessageDialog(this, "No product found with the given barcode.");
+                JOptionPane.showMessageDialog(this, "No product found with the given barcodeNumber.");
             }
 
         } catch (Exception e) {

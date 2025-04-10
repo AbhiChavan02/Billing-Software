@@ -375,13 +375,13 @@ public class ProcessSalesPanel extends JPanel {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> productCollection = database.getCollection("Product");
 
-            String barcode = txtBarcode.getText().trim();
-            if (barcode.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please enter a barcode.");
+            String barcodeNumber = txtBarcode.getText().trim();
+            if (barcodeNumber.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter a barcodeNumber.");
                 return;
             }
 
-            Document product = productCollection.find(new Document("barcode", barcode)).first();
+            Document product = productCollection.find(new Document("barcodeNumber", barcodeNumber)).first();
             if (product != null) {
                 // Set product name
                 txtProductName.setText(product.getString("productName"));
@@ -533,8 +533,8 @@ public class ProcessSalesPanel extends JPanel {
                 MongoCollection<Document> salesCollection = database.getCollection("Sales");
                 MongoCollection<Document> productCollection = database.getCollection("Product");
 
-                String barcode = txtBarcode.getText();
-                Document product = productCollection.find(new Document("barcode", barcode)).first();
+                String barcodeNumber = txtBarcode.getText();
+                Document product = productCollection.find(new Document("barcodeNumber", barcodeNumber)).first();
                 if (product != null) {
                     int currentStock = product.getInteger("stockQuantity");
                     if (quantity > currentStock) {
@@ -543,7 +543,7 @@ public class ProcessSalesPanel extends JPanel {
                     }
 
                     int newStock = currentStock - quantity;
-                    productCollection.updateOne(new Document("barcode", barcode),
+                    productCollection.updateOne(new Document("barcodeNumber", barcodeNumber),
                             new Document("$set", new Document("stockQuantity", newStock)));
 
                     Document sale = new Document("productName", txtProductName.getText())
@@ -596,12 +596,12 @@ public class ProcessSalesPanel extends JPanel {
     }
     
     
-    private String fetchImageFromMongoDB(String barcode) {
+    private String fetchImageFromMongoDB(String barcodeNumber) {
         try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> productCollection = database.getCollection("Product");
 
-            Document product = productCollection.find(new Document("barcode", barcode)).first();
+            Document product = productCollection.find(new Document("barcodeNumber", barcodeNumber)).first();
             if (product != null) {
                 return product.getString("imageBase64");
             }
@@ -630,18 +630,18 @@ public class ProcessSalesPanel extends JPanel {
     
     private String fetchCloudinaryImageUrl() {
         try {
-            String barcode = txtBarcode.getText().trim();
-            if (barcode.isEmpty()) {
+            String barcodeNumber = txtBarcode.getText().trim();
+            if (barcodeNumber.isEmpty()) {
                 return null;
             }
 
             Cloudinary cloudinary = CloudinaryConfig.getInstance();
 
             // Log the public_id being used
-            System.out.println("Fetching image for barcode (public_id): " + barcode);
+            System.out.println("Fetching image for barcodeNumber (public_id): " + barcodeNumber);
 
             // Try to fetch the image
-            Map result = cloudinary.uploader().explicit(barcode, ObjectUtils.asMap("type", "upload"));
+            Map result = cloudinary.uploader().explicit(barcodeNumber, ObjectUtils.asMap("type", "upload"));
 
             // Log the result from Cloudinary
             System.out.println("Cloudinary response: " + result);
@@ -651,7 +651,7 @@ public class ProcessSalesPanel extends JPanel {
                 System.out.println("Image URL found: " + imageUrl);
                 return imageUrl;
             } else {
-                System.out.println("Image not found in Cloudinary for public_id: " + barcode);
+                System.out.println("Image not found in Cloudinary for public_id: " + barcodeNumber);
                 return null;
             }
 
@@ -743,7 +743,7 @@ public class ProcessSalesPanel extends JPanel {
         invoiceDialog.add(buttonPanel, BorderLayout.SOUTH);
         invoiceDialog.setVisible(true);
     }
-private void downloadInvoiceAsPDF(String productName,String barcode,String qty,double totalPrice, double finalPrice, double savings, String cloudinaryImageUrl) {
+private void downloadInvoiceAsPDF(String productName,String barcodeNumber,String qty,double totalPrice, double finalPrice, double savings, String cloudinaryImageUrl) {
     JFileChooser fileChooser = new JFileChooser();
     fileChooser.setDialogTitle("Save Invoice as PDF");
 
@@ -782,7 +782,7 @@ private void downloadInvoiceAsPDF(String productName,String barcode,String qty,d
             pdfDoc.add(new Paragraph("\n"));
 
             // Fetch image from MongoDB
-            String imageBase64 = fetchImageFromMongoDB(barcode); // Fetch image from MongoDB
+            String imageBase64 = fetchImageFromMongoDB(barcodeNumber); // Fetch image from MongoDB
             if (imageBase64 != null && !imageBase64.isEmpty()) {
                 byte[] imageBytes = Base64.getDecoder().decode(imageBase64);
                 com.itextpdf.text.Image productImage = com.itextpdf.text.Image.getInstance(imageBytes); // Use iText Image
@@ -799,7 +799,7 @@ private void downloadInvoiceAsPDF(String productName,String barcode,String qty,d
             table.addCell(new PdfPCell(new Phrase(productName, normalFont)));
 
             table.addCell(new PdfPCell(new Phrase("Barcode", boldFont)));
-            table.addCell(new PdfPCell(new Phrase(barcode, normalFont)));
+            table.addCell(new PdfPCell(new Phrase(barcodeNumber, normalFont)));
 
             table.addCell(new PdfPCell(new Phrase("Quantity", boldFont)));
             table.addCell(new PdfPCell(new Phrase(qty, normalFont)));

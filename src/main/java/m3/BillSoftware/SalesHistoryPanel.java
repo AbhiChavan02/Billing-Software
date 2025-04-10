@@ -243,7 +243,7 @@ public class SalesHistoryPanel extends JPanel {
 
             // Create SalesRecord using getDoubleValue
             SalesRecord record = new SalesRecord(
-                    product.getString("barcode"),
+                    product.getString("barcodeNumber"),
                     category, // Use the category fetched from the database
                     productName,
                     product.getString("productImagePath"),
@@ -339,7 +339,7 @@ public class SalesHistoryPanel extends JPanel {
         double profit = record.finalPrice - record.totalPrice;
 
         return new Object[]{
-                record.barcode,
+                record.barcodeNumber,
                 record.category,
                 record.productName,
                 image,
@@ -399,7 +399,7 @@ public class SalesHistoryPanel extends JPanel {
             boolean matchesProduct = selectedProduct.equals("All") || record.category.equalsIgnoreCase(selectedProduct);
 
             // Filter by search text
-            boolean matchesSearch = record.barcode.toLowerCase().contains(searchText) ||
+            boolean matchesSearch = record.barcodeNumber.toLowerCase().contains(searchText) ||
                     record.productName.toLowerCase().contains(searchText) ||
                     record.customerName.toLowerCase().contains(searchText) ||
                     String.valueOf(record.totalPrice).contains(searchText);
@@ -424,7 +424,7 @@ public class SalesHistoryPanel extends JPanel {
             invoicePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
             invoicePanel.add(new JLabel("<html><h2>Invoice</h2></html>"));
-            invoicePanel.add(new JLabel("Barcode: " + record.barcode));
+            invoicePanel.add(new JLabel("Barcode: " + record.barcodeNumber));
             invoicePanel.add(new JLabel("Category: " + record.category));
             invoicePanel.add(new JLabel("Product: " + record.productName));
             invoicePanel.add(new JLabel("Total Price: ₹" + String.format("%.2f", record.totalPrice))); // Add ₹ sign
@@ -498,7 +498,7 @@ public class SalesHistoryPanel extends JPanel {
 
             pdfDoc.add(new Paragraph("Invoice"));
             pdfDoc.add(new Paragraph(" "));
-            pdfDoc.add(new Paragraph("Barcode: " + record.barcode));
+            pdfDoc.add(new Paragraph("Barcode: " + record.barcodeNumber));
             pdfDoc.add(new Paragraph("Category: " + record.category));
             pdfDoc.add(new Paragraph("Product Name: " + record.productName));
             pdfDoc.add(new Paragraph("Total Price: ₹" + String.format("%.2f", record.totalPrice))); // Add ₹ sign
@@ -603,7 +603,7 @@ public class SalesHistoryPanel extends JPanel {
     }
 
     private class SalesRecord {
-        final String barcode;
+        final String barcodeNumber;
         final String category; // Add product type
         final String productName;
         final String productImagePath;
@@ -616,7 +616,7 @@ public class SalesHistoryPanel extends JPanel {
         SalesRecord(String barcode, String category, String productName, String productImagePath,
                     double totalPrice, double finalPrice, String customerName,
                     String staff, Date timestamp) {
-            this.barcode = barcode;
+            this.barcodeNumber = barcode;
             this.category = category;
             this.productName = productName;
             this.productImagePath = productImagePath;
@@ -684,7 +684,7 @@ public class SalesHistoryPanel extends JPanel {
         }
 
         private void downloadProductPDF(int row) {
-            String barcode = (String) tableModel.getValueAt(row, 0);
+            String barcodeNumber = (String) tableModel.getValueAt(row, 0);
             String category = (String) tableModel.getValueAt(row, 1);
             String productName = (String) tableModel.getValueAt(row, 2);
             double totalAmount = (Double) tableModel.getValueAt(row, 4);
@@ -695,7 +695,7 @@ public class SalesHistoryPanel extends JPanel {
 
             // Create a SalesRecord object
             SalesRecord record = new SalesRecord(
-                    barcode, category, productName, "", totalAmount, finalPrice, customerName, seller, new Date()
+            		barcodeNumber, category, productName, "", totalAmount, finalPrice, customerName, seller, new Date()
             );
 
             // Generate and download the PDF
