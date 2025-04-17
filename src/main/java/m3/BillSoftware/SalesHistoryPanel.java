@@ -214,7 +214,10 @@ public class SalesHistoryPanel extends JPanel {
 
         List<String> productNames = new ArrayList<>();
         for (Document sale : salesCollection.find()) {
-            productNames.add(sale.getString("productName"));
+            String productName = sale.getString("productName");
+            if (productName != null) {
+                productNames.add(productName);
+            }
         }
 
         MongoCollection<Document> productCollection = database.getCollection("Product");
@@ -224,7 +227,10 @@ public class SalesHistoryPanel extends JPanel {
 
         Map<String, Document> productCache = new HashMap<>();
         for (Document product : products) {
-            productCache.put(product.getString("productName"), product);
+            String productName = product.getString("productName");
+            if (productName != null) {
+                productCache.put(productName, product);
+            }
         }
 
         for (Document sale : salesCollection.find()) {
@@ -233,9 +239,9 @@ public class SalesHistoryPanel extends JPanel {
 
             // Fetch category directly from the product document
             String category = product.getString("category"); // Assuming "category" is the field name in the Product collection
-
-            // Debugging: Print product name and category
-            System.out.println("Product Name: " + productName + ", Category: " + category);
+            if (category == null) {
+                category = "Unknown"; // Default category if not specified
+            }
 
             // Determine seller type
             String seller = sale.containsKey("staff") ?
@@ -244,7 +250,7 @@ public class SalesHistoryPanel extends JPanel {
             // Create SalesRecord using getDoubleValue
             SalesRecord record = new SalesRecord(
                     product.getString("barcodeNumber"),
-                    category, // Use the category fetched from the database
+                    category,
                     productName,
                     product.getString("productImagePath"),
                     getDoubleValue(sale, "totalPrice"), // Use getDoubleValue for totalPrice
@@ -256,26 +262,6 @@ public class SalesHistoryPanel extends JPanel {
             records.add(record);
         }
         return records;
-    }
-
-    // Helper method to determine product type
-    private String determineProductType(String productName) {
-        if (productName == null || productName.trim().isEmpty()) {
-            return "Other"; // Handle null or empty product names
-        }
-
-        // Convert product name to lowercase for case-insensitive comparison
-        String lowerCaseProductName = productName.toLowerCase();
-
-        if (lowerCaseProductName.contains("emetation")) {
-            return "Emetation";
-        } else if (lowerCaseProductName.contains("gold")) {
-            return "Gold";
-        } else if (lowerCaseProductName.contains("silver")) {
-            return "Silver";
-        } else {
-            return "Other"; // Default for unknown types
-        }
     }
 
     private double getDoubleValue(Document document, String key) {
@@ -321,10 +307,9 @@ public class SalesHistoryPanel extends JPanel {
         calculateTotalCollectionAndProfit();
     }
 
-
     private void updateRowImage(SalesRecord record, ImageIcon image) {
         for (int i = 0; i < tableModel.getRowCount(); i++) {
-            if (tableModel.getValueAt(i, 2).equals(record.productName)) { // Check product name column
+            if (Objects.equals(tableModel.getValueAt(i, 2), record.productName)) { // Check product name column
                 tableModel.setValueAt(image, i, 3); // Update product image column
                 break;
             }
@@ -339,16 +324,16 @@ public class SalesHistoryPanel extends JPanel {
         double profit = record.finalPrice - record.totalPrice;
 
         return new Object[]{
-                record.barcodeNumber,
-                record.category,
-                record.productName,
+                record.barcodeNumber != null ? record.barcodeNumber : "",
+                record.category != null ? record.category : "",
+                record.productName != null ? record.productName : "",
                 image,
                 record.totalPrice, // Store as Double
                 record.finalPrice, // Store as Double
                 profit, // Store as Double
-                record.customerName,
-                record.staff,
-                new SimpleDateFormat("EEE MMM dd").format(record.timestamp),
+                record.customerName != null ? record.customerName : "",
+                record.staff != null ? record.staff : "",
+                record.timestamp != null ? new SimpleDateFormat("EEE MMM dd").format(record.timestamp) : "",
                 downloadButton
         };
     }
@@ -358,14 +343,18 @@ public class SalesHistoryPanel extends JPanel {
         double totalProfit = 0;
 
         for (int i = 0; i < tableModel.getRowCount(); i++) {
-            double totalAmount = (Double) tableModel.getValueAt(i, 4); // Total Amount column
-            double profit = (Double) tableModel.getValueAt(i, 6); // Profit column
-            totalCollection += totalAmount;
+            try {
+                double totalAmount = (Double) tableModel.getValueAt(i, 4); // Total Amount column
+                double profit = (Double) tableModel.getValueAt(i, 6); // Profit column
+                totalCollection += totalAmount;
 
-            // Calculate profit only for Emetation products
-            String category = (String) tableModel.getValueAt(i, 1); // Product Type column
-            if (category.equalsIgnoreCase("Emetation")) {
-                totalProfit += profit;
+                // Calculate profit only for Emetation products
+                String category = (String) tableModel.getValueAt(i, 1); // Product Type column
+                if (category != null && category.equalsIgnoreCase("Emetation")) {
+                    totalProfit += profit;
+                }
+            } catch (Exception e) {
+                System.err.println("Error calculating totals for row " + i + ": " + e.getMessage());
             }
         }
 
@@ -377,7 +366,7 @@ public class SalesHistoryPanel extends JPanel {
     private void sortSalesByCategory(String category) {
         List<SalesRecord> filteredRecords = new ArrayList<>();
         for (SalesRecord record : allSalesRecords) {
-            if (record.category.equalsIgnoreCase(category)) {
+            if (record.category != null && record.category.equalsIgnoreCase(category)) {
                 filteredRecords.add(record);
             }
         }
@@ -392,17 +381,20 @@ public class SalesHistoryPanel extends JPanel {
         List<SalesRecord> filteredRecords = new ArrayList<>();
         for (SalesRecord record : allSalesRecords) {
             // Filter by month
-            String recordMonth = new SimpleDateFormat("MMMM").format(record.timestamp);
+            String recordMonth = record.timestamp != null ? 
+                new SimpleDateFormat("MMMM").format(record.timestamp) : "";
             boolean matchesMonth = selectedMonth.equals("All") || recordMonth.equalsIgnoreCase(selectedMonth);
 
             // Filter by product
-            boolean matchesProduct = selectedProduct.equals("All") || record.category.equalsIgnoreCase(selectedProduct);
+            boolean matchesProduct = selectedProduct.equals("All") || 
+                (record.category != null && record.category.equalsIgnoreCase(selectedProduct));
 
             // Filter by search text
-            boolean matchesSearch = record.barcodeNumber.toLowerCase().contains(searchText) ||
-                    record.productName.toLowerCase().contains(searchText) ||
-                    record.customerName.toLowerCase().contains(searchText) ||
-                    String.valueOf(record.totalPrice).contains(searchText);
+            boolean matchesSearch = searchText.isEmpty() ||
+                (record.barcodeNumber != null && record.barcodeNumber.toLowerCase().contains(searchText)) ||
+                (record.productName != null && record.productName.toLowerCase().contains(searchText)) ||
+                (record.customerName != null && record.customerName.toLowerCase().contains(searchText)) ||
+                String.valueOf(record.totalPrice).contains(searchText);
 
             if (matchesMonth && matchesProduct && matchesSearch) {
                 filteredRecords.add(record);
@@ -424,15 +416,16 @@ public class SalesHistoryPanel extends JPanel {
             invoicePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
             invoicePanel.add(new JLabel("<html><h2>Invoice</h2></html>"));
-            invoicePanel.add(new JLabel("Barcode: " + record.barcodeNumber));
-            invoicePanel.add(new JLabel("Category: " + record.category));
-            invoicePanel.add(new JLabel("Product: " + record.productName));
+            invoicePanel.add(new JLabel("Barcode: " + (record.barcodeNumber != null ? record.barcodeNumber : "")));
+            invoicePanel.add(new JLabel("Category: " + (record.category != null ? record.category : "")));
+            invoicePanel.add(new JLabel("Product: " + (record.productName != null ? record.productName : "")));
             invoicePanel.add(new JLabel("Total Price: ₹" + String.format("%.2f", record.totalPrice))); // Add ₹ sign
             invoicePanel.add(new JLabel("Final Price: ₹" + String.format("%.2f", record.finalPrice))); // Add ₹ sign
             invoicePanel.add(new JLabel("Savings: ₹" + String.format("%.2f", savings))); // Add ₹ sign
-            invoicePanel.add(new JLabel("Customer: " + record.customerName));
-            invoicePanel.add(new JLabel("Seller: " + record.staff));
-            invoicePanel.add(new JLabel("Date: " + new SimpleDateFormat("EEE MMM dd").format(record.timestamp)));
+            invoicePanel.add(new JLabel("Customer: " + (record.customerName != null ? record.customerName : "")));
+            invoicePanel.add(new JLabel("Seller: " + (record.staff != null ? record.staff : "")));
+            invoicePanel.add(new JLabel("Date: " + (record.timestamp != null ? 
+                new SimpleDateFormat("EEE MMM dd").format(record.timestamp) : "")));
 
             JLabel imageLabel = new JLabel(image);
             imageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -480,7 +473,8 @@ public class SalesHistoryPanel extends JPanel {
             if (choice == 1) {
                 JFileChooser fileChooser = new JFileChooser();
                 fileChooser.setDialogTitle("Save E-Invoice");
-                fileChooser.setSelectedFile(new File(record.productName + "_E-Invoice.pdf"));
+                fileChooser.setSelectedFile(new File(
+                    (record.productName != null ? record.productName : "Invoice") + "_E-Invoice.pdf"));
                 if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
                     file = fileChooser.getSelectedFile();
                     if (!file.getName().toLowerCase().endsWith(".pdf")) {
@@ -490,7 +484,8 @@ public class SalesHistoryPanel extends JPanel {
                     return;
                 }
             } else {
-                file = new File(System.getProperty("java.io.tmpdir"), record.productName + "_Invoice.pdf");
+                file = new File(System.getProperty("java.io.tmpdir"), 
+                    (record.productName != null ? record.productName : "Invoice") + "_Invoice.pdf");
             }
 
             PdfWriter.getInstance(pdfDoc, new FileOutputStream(file));
@@ -498,15 +493,16 @@ public class SalesHistoryPanel extends JPanel {
 
             pdfDoc.add(new Paragraph("Invoice"));
             pdfDoc.add(new Paragraph(" "));
-            pdfDoc.add(new Paragraph("Barcode: " + record.barcodeNumber));
-            pdfDoc.add(new Paragraph("Category: " + record.category));
-            pdfDoc.add(new Paragraph("Product Name: " + record.productName));
+            pdfDoc.add(new Paragraph("Barcode: " + (record.barcodeNumber != null ? record.barcodeNumber : "")));
+            pdfDoc.add(new Paragraph("Category: " + (record.category != null ? record.category : "")));
+            pdfDoc.add(new Paragraph("Product Name: " + (record.productName != null ? record.productName : "")));
             pdfDoc.add(new Paragraph("Total Price: ₹" + String.format("%.2f", record.totalPrice))); // Add ₹ sign
             pdfDoc.add(new Paragraph("Final Price: ₹" + String.format("%.2f", record.finalPrice))); // Add ₹ sign
             pdfDoc.add(new Paragraph("Savings: ₹" + String.format("%.2f", savings))); // Add ₹ sign
-            pdfDoc.add(new Paragraph("Customer Name: " + record.customerName));
-            pdfDoc.add(new Paragraph("Seller: " + record.staff));
-            pdfDoc.add(new Paragraph("Date: " + new SimpleDateFormat("EEE MMM dd").format(record.timestamp)));
+            pdfDoc.add(new Paragraph("Customer Name: " + (record.customerName != null ? record.customerName : "")));
+            pdfDoc.add(new Paragraph("Seller: " + (record.staff != null ? record.staff : "")));
+            pdfDoc.add(new Paragraph("Date: " + (record.timestamp != null ? 
+                new SimpleDateFormat("EEE MMM dd").format(record.timestamp) : "")));
             pdfDoc.add(new Paragraph(" "));
             pdfDoc.add(new Paragraph("Thank you for your business!"));
 
@@ -604,7 +600,7 @@ public class SalesHistoryPanel extends JPanel {
 
     private class SalesRecord {
         final String barcodeNumber;
-        final String category; // Add product type
+        final String category;
         final String productName;
         final String productImagePath;
         final double totalPrice;
@@ -613,10 +609,10 @@ public class SalesHistoryPanel extends JPanel {
         final String staff;
         final Date timestamp;
 
-        SalesRecord(String barcode, String category, String productName, String productImagePath,
+        SalesRecord(String barcodeNumber, String category, String productName, String productImagePath,
                     double totalPrice, double finalPrice, String customerName,
                     String staff, Date timestamp) {
-            this.barcodeNumber = barcode;
+            this.barcodeNumber = barcodeNumber;
             this.category = category;
             this.productName = productName;
             this.productImagePath = productImagePath;
@@ -643,9 +639,9 @@ public class SalesHistoryPanel extends JPanel {
                                                       boolean isSelected, boolean hasFocus, int row, int column) {
             // Customize appearance based on selection
             if (isSelected) {
-            	setBackground(new Color(192, 57, 43)); // Darker red when selected
+                setBackground(new Color(192, 57, 43)); // Darker red when selected
             } else {
-            	setBackground(new Color(231, 76, 60)); // Default red
+                setBackground(new Color(231, 76, 60)); // Default red
             }
             return this;
         }
@@ -691,15 +687,23 @@ public class SalesHistoryPanel extends JPanel {
             double finalPrice = (Double) tableModel.getValueAt(row, 5);
             String customerName = (String) tableModel.getValueAt(row, 7);
             String seller = (String) tableModel.getValueAt(row, 8);
-            String timestamp = (String) tableModel.getValueAt(row, 9);
+            String timestampStr = (String) tableModel.getValueAt(row, 9);
 
-            // Create a SalesRecord object
-            SalesRecord record = new SalesRecord(
-            		barcodeNumber, category, productName, "", totalAmount, finalPrice, customerName, seller, new Date()
-            );
+            try {
+                Date timestamp = timestampStr != null && !timestampStr.isEmpty() ? 
+                    new SimpleDateFormat("EEE MMM dd").parse(timestampStr) : new Date();
 
-            // Generate and download the PDF
-            downloadInvoiceAsPDF(record, new ImageIcon());
+                // Create a SalesRecord object
+                SalesRecord record = new SalesRecord(
+                        barcodeNumber, category, productName, "", totalAmount, finalPrice, customerName, seller, timestamp
+                );
+
+                // Generate and download the PDF
+                downloadInvoiceAsPDF(record, new ImageIcon());
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(SalesHistoryPanel.this, 
+                    "Error creating invoice: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 

@@ -198,7 +198,7 @@ public class StaffSalesHistoryPanel extends JPanel {
 
             // Create SalesRecord using getDoubleValue
             SalesRecord record = new SalesRecord(
-                product.getString("barcode"),
+                product.getString("barcodeNumber"),
                 productName,
                 product.getString("productImagePath"),
                 getDoubleValue(sale, "totalPrice"), // Use getDoubleValue for totalPrice
@@ -262,7 +262,7 @@ public class StaffSalesHistoryPanel extends JPanel {
         downloadButton.addActionListener(e -> generateInvoice(record, image));
 
         return new Object[]{
-            record.barcode,
+            record.barcodeNumber,
             record.productName,
             image, // Ensure this is a valid ImageIcon
             record.totalPrice,
@@ -313,7 +313,7 @@ public class StaffSalesHistoryPanel extends JPanel {
             boolean matchesMonth = selectedMonth.equals("All") || recordMonth.equalsIgnoreCase(selectedMonth);
 
             // Check if the record matches the search text
-            boolean matchesSearch = record.barcode.toLowerCase().contains(searchText) ||
+            boolean matchesSearch = record.barcodeNumber.toLowerCase().contains(searchText) ||
                     record.productName.toLowerCase().contains(searchText) ||
                     record.customerName.toLowerCase().contains(searchText) ||
                     String.valueOf(record.totalPrice).contains(searchText);
@@ -348,7 +348,7 @@ public class StaffSalesHistoryPanel extends JPanel {
             invoicePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
             invoicePanel.add(new JLabel("<html><h2>Invoice</h2></html>"));
-            invoicePanel.add(new JLabel("Barcode: " + record.barcode));
+            invoicePanel.add(new JLabel("Barcode: " + record.barcodeNumber));
             invoicePanel.add(new JLabel("Product: " + record.productName));
             invoicePanel.add(new JLabel("Total Price: ₹" + record.totalPrice));
             invoicePanel.add(new JLabel("Final Price: ₹" + record.finalPrice));
@@ -423,7 +423,7 @@ public class StaffSalesHistoryPanel extends JPanel {
 
             pdfDoc.add(new Paragraph("Invoice"));
             pdfDoc.add(new Paragraph(" "));
-            pdfDoc.add(new Paragraph("Barcode: " + record.barcode));
+            pdfDoc.add(new Paragraph("Barcode: " + record.barcodeNumber));
             pdfDoc.add(new Paragraph("Product Name: " + record.productName));
             pdfDoc.add(new Paragraph("Total Price: ₹" + record.totalPrice));
             pdfDoc.add(new Paragraph("Final Price: ₹" + record.finalPrice));
@@ -529,7 +529,7 @@ public class StaffSalesHistoryPanel extends JPanel {
     }
 
     private class SalesRecord {
-        final String barcode;
+        final String barcodeNumber;
         final String productName;
         final String productImagePath;
         final double totalPrice;
@@ -539,10 +539,10 @@ public class StaffSalesHistoryPanel extends JPanel {
         final Date timestamp;
         final String category; // Add category field
 
-        SalesRecord(String barcode, String productName, String productImagePath,
+        SalesRecord(String barcodeNumber, String productName, String productImagePath,
                     double totalPrice, double finalPrice, String customerName,
                     String staff, Date timestamp, String category) { // Add category parameter
-            this.barcode = barcode;
+            this.barcodeNumber = barcodeNumber;
             this.productName = productName;
             this.productImagePath = productImagePath;
             this.totalPrice = totalPrice;
@@ -610,7 +610,7 @@ public class StaffSalesHistoryPanel extends JPanel {
         }
 
         private void downloadProductPDF(int row) {
-            String barcode = (String) tableModel.getValueAt(row, 0);
+            String barcodeNumber = (String) tableModel.getValueAt(row, 0);
             String productName = (String) tableModel.getValueAt(row, 1);
             double totalAmount = (Double) tableModel.getValueAt(row, 3);
             double finalPrice = (Double) tableModel.getValueAt(row, 4);
@@ -620,7 +620,7 @@ public class StaffSalesHistoryPanel extends JPanel {
 
             // Create a SalesRecord object
             SalesRecord record = new SalesRecord(
-                barcode, productName, "", totalAmount, finalPrice, customerName, seller, new Date(), ""
+                barcodeNumber, productName, "", totalAmount, finalPrice, customerName, seller, new Date(), ""
             );
 
             // Generate and download the PDF

@@ -139,7 +139,7 @@ public class StaffRegisteredProductsPanel extends JPanel {
             tableModel.setRowCount(0);
 
             for (Document product : productCollection.find()) {
-                String barcode = product.getString("barcode");
+                String barcodeNumber = product.getString("barcodeNumber");
                 String productName = product.getString("productName");
                 String category = product.getString("category");
                 Object rateValue = getRateValue(product, category);
@@ -147,7 +147,7 @@ public class StaffRegisteredProductsPanel extends JPanel {
                 String imageUrl = product.getString("productImagePath");
 
                 tableModel.addRow(new Object[]{
-                    barcode != null ? barcode : "N/A",
+                    barcodeNumber != null ? barcodeNumber : "N/A",
                     productName != null ? productName : "N/A",
                     loadProductImage(imageUrl),
                     category != null ? category : "N/A",
@@ -184,7 +184,7 @@ public class StaffRegisteredProductsPanel extends JPanel {
             Document query = new Document();
             switch (criteria) {
                 case "Barcode":
-                    query.append("barcode", searchValue);
+                    query.append("barcodeNumber", searchValue);
                     break;
                 case "Product Name":
                     query.append("productName", new Document("$regex", searchValue).append("$options", "i"));
@@ -208,7 +208,7 @@ public class StaffRegisteredProductsPanel extends JPanel {
             for (Document product : productCollection.find(query)) {
                 String category = product.getString("category");
                 tableModel.addRow(new Object[]{
-                    product.getString("barcode"),
+                    product.getString("barcodeNumber"),
                     product.getString("productName"),
                     loadProductImage(product.getString("productImagePath")),
                     category,

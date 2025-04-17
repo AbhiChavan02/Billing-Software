@@ -758,6 +758,11 @@ class ProductRegistrationPanel extends JPanel {
 
         return btn;
     }
+    
+    
+    
+    
+    
 
     private void generateAndShowBarcode() {
         String productName = txtProductName.getText().trim();

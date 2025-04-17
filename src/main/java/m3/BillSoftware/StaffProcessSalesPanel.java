@@ -3,7 +3,6 @@ package m3.BillSoftware;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.itextpdf.text.*;
-import com.itextpdf.text.List;
 import com.itextpdf.text.pdf.*;
 import com.mongodb.client.*;
 import org.bson.Document;
@@ -25,14 +24,16 @@ import java.util.ArrayList; // For ArrayList implementation
 public class StaffProcessSalesPanel extends JPanel {
     private JTextField txtBarcode, txtProductName, txtPricePerGram, txtCurrentGoldRate;
     private JTextField txtQuantity, txtTotalPrice, txtCustomerName, txtFinalPrice;
-    private JTextField txtGstAmount, txtMakingCharges, txtTotalAmount;
+    private JTextField txtGstAmount, txtMakingCharges, txtTotalAmount, txtMakingChargesPercentage;
+    private JTextField txtPhoneNumber, txtAddress;
     private JComboBox<String> cmbStaff;
     private JButton btnProcessSale, btnClear, btnRefresh;
     private Color backgroundColor = new Color(241, 242, 246);
     private Color formColor = Color.WHITE;
     private double grams = 0.0;
     private Double Totalprice;
-    private JLabel goldRateLabel, RateLabel;
+    private JLabel goldRateLabel, RateLabel, makingChargesPercentageLabel;
+    private String currentCategory = "";
 
     public StaffProcessSalesPanel() {
         setLayout(new GridBagLayout());
@@ -45,7 +46,7 @@ public class StaffProcessSalesPanel extends JPanel {
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(formColor);
         formPanel.setBorder(BorderFactory.createCompoundBorder(
-        		BorderFactory.createLineBorder(new Color(220, 220, 220), 1), // 1 is the thickness of the border, 
+                BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
                 BorderFactory.createEmptyBorder(30, 40, 30, 40)));
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -60,6 +61,8 @@ public class StaffProcessSalesPanel extends JPanel {
 
         // Form components
         txtCustomerName = createFormTextField(20);
+        txtPhoneNumber = createFormTextField(20);
+        txtAddress = createFormTextField(20);
         txtBarcode = createFormTextField(20);
         txtProductName = createFormTextField(20);
         txtProductName.setEditable(false);
@@ -73,6 +76,7 @@ public class StaffProcessSalesPanel extends JPanel {
         txtMakingCharges = createFormTextField(20);
         txtTotalAmount = createFormTextField(20);
         txtCurrentGoldRate = createFormTextField(20);
+        txtMakingChargesPercentage = createFormTextField(5);
         
         cmbStaff = new JComboBox<>();
         cmbStaff.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -80,10 +84,24 @@ public class StaffProcessSalesPanel extends JPanel {
         txtGstAmount.setEditable(false);
         txtMakingCharges.setEditable(false);
         txtTotalAmount.setEditable(false);
+        
+        // Set default making charges percentage
+        txtMakingChargesPercentage.setText("14");
+        
+        // Add document listener for making charges percentage
+        txtMakingChargesPercentage.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { updateMakingCharges(); }
+            @Override public void removeUpdate(DocumentEvent e) { updateMakingCharges(); }
+            @Override public void changedUpdate(DocumentEvent e) { updateMakingCharges(); }
+        });
 
         btnRefresh = createActionButton("Refresh", new Color(52, 152, 219));
         btnProcessSale = createActionButton("Process Sale", new Color(46, 204, 113));
         btnClear = createActionButton("Clear", new Color(231, 76, 60));
+
+        // Initialize labels
+        makingChargesPercentageLabel = new JLabel("Making Charges %:");
+        makingChargesPercentageLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
         // Layout
         gbc.gridwidth = 2;
@@ -98,23 +116,37 @@ public class StaffProcessSalesPanel extends JPanel {
         gbc.gridx = 1;
         formPanel.add(txtCustomerName, gbc);
 
-        // Staff Dropdown
+        // Phone Number
         gbc.gridx = 0;
         gbc.gridy = 2;
+        formPanel.add(createFormLabel("Phone Number:"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtPhoneNumber, gbc);
+
+        // Address
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        formPanel.add(createFormLabel("Address:"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtAddress, gbc);
+
+        // Staff Dropdown
+        gbc.gridx = 0;
+        gbc.gridy = 4;
         formPanel.add(createFormLabel("Staff Member:"), gbc);
         gbc.gridx = 1;
         formPanel.add(cmbStaff, gbc);
 
         // Barcode Field
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 5;
         formPanel.add(createFormLabel("Barcode:"), gbc);
         gbc.gridx = 1;
         formPanel.add(createInputPanel(txtBarcode, btnRefresh), gbc);
 
         // Product Name
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = 6;
         formPanel.add(createFormLabel("Product Name:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtProductName, gbc);
@@ -122,68 +154,75 @@ public class StaffProcessSalesPanel extends JPanel {
         // Price/Grams
         RateLabel = createFormLabel("Rate Per Piece:");
         gbc.gridx = 0;
-        gbc.gridy = 5;
+        gbc.gridy = 7;
         formPanel.add(RateLabel, gbc);
         gbc.gridx = 1;
         formPanel.add(txtPricePerGram, gbc);
 
         // Quantity
         gbc.gridx = 0;
-        gbc.gridy = 6;
+        gbc.gridy = 8;
         formPanel.add(createFormLabel("Quantity:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtQuantity, gbc);
         
-     // Current Gold Rate (hidden initially)
+        // Current Gold Rate (hidden initially)
         goldRateLabel = createFormLabel("Current Gold Rate:");
         gbc.gridx = 0;
-        gbc.gridy = 7;
+        gbc.gridy = 9;
         formPanel.add(goldRateLabel, gbc);
         gbc.gridx = 1;
         formPanel.add(txtCurrentGoldRate, gbc);
         goldRateLabel.setVisible(false);
         txtCurrentGoldRate.setVisible(false);
+        
+        // Making Charges Percentage
+        gbc.gridx = 0;
+        gbc.gridy = 10;
+        formPanel.add(makingChargesPercentageLabel, gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtMakingChargesPercentage, gbc);
+        makingChargesPercentageLabel.setVisible(false);
+        txtMakingChargesPercentage.setVisible(false);
 
         // Total Price
         gbc.gridx = 0;
-        gbc.gridy = 8;
+        gbc.gridy = 11;
         formPanel.add(createFormLabel("Price:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtTotalPrice, gbc);
 
-        
-
-        // GST Amount
-        gbc.gridx = 0;
-        gbc.gridy = 9;
-        formPanel.add(createFormLabel("GST Amount:"), gbc);
-        gbc.gridx = 1;
-        formPanel.add(txtGstAmount, gbc);
-
         // Making Charges
         gbc.gridx = 0;
-        gbc.gridy = 10;
+        gbc.gridy = 12;
         formPanel.add(createFormLabel("Making Charges:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtMakingCharges, gbc);
 
+        // GST Amount
+        gbc.gridx = 0;
+        gbc.gridy = 13;
+        formPanel.add(createFormLabel("GST Amount:"), gbc);
+        gbc.gridx = 1;
+        formPanel.add(txtGstAmount, gbc);
+
         // Total Amount
         gbc.gridx = 0;
-        gbc.gridy = 11;
+        gbc.gridy = 14;
         formPanel.add(createFormLabel("Total Amount:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtTotalAmount, gbc);
 
         // Final Price
         gbc.gridx = 0;
-        gbc.gridy = 12;
+        gbc.gridy = 15;
         formPanel.add(createFormLabel("Final Price:"), gbc);
         gbc.gridx = 1;
         formPanel.add(txtFinalPrice, gbc);
 
         // Buttons
         gbc.gridx = 0;
-        gbc.gridy = 13;
+        gbc.gridy = 16;
         gbc.gridwidth = 2;
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
         buttonPanel.add(btnProcessSale);
@@ -217,15 +256,12 @@ public class StaffProcessSalesPanel extends JPanel {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> staffCollection = database.getCollection("Staff");
 
-            // Explicitly specify the type for ArrayList
             java.util.List<String> staffNames = new ArrayList<String>();
 
-            // Fetch staff names from the database
             staffCollection.find().forEach(doc -> 
                 staffNames.add(doc.getString("firstname") + " " + doc.getString("lastname"))
             );
 
-            // Set the staff names in the dropdown
             cmbStaff.setModel(new DefaultComboBoxModel<>(staffNames.toArray(new String[0])));
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error loading staff: " + e.getMessage());
@@ -281,31 +317,35 @@ public class StaffProcessSalesPanel extends JPanel {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> productCollection = database.getCollection("Product");
 
-            String barcode = txtBarcode.getText().trim();
-            if (barcode.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please enter a barcode.");
+            String barcodeNumber = txtBarcode.getText().trim();
+            if (barcodeNumber.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please enter a barcodeNumber.");
                 return;
             }
 
-            Document product = productCollection.find(new Document("barcode", barcode)).first();
+            Document product = productCollection.find(new Document("barcodeNumber", barcodeNumber)).first();
             if (product != null) {
                 txtProductName.setText(product.getString("productName"));
-                String category = product.getString("category");
+                currentCategory = product.getString("category");
 
-                if ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) {
+                if ("Gold".equalsIgnoreCase(currentCategory) || "Silver".equalsIgnoreCase(currentCategory)) {
                     grams = product.getDouble("grams");
                     txtPricePerGram.setText(String.valueOf(grams));
                     RateLabel.setText("Grams:");
                     goldRateLabel.setVisible(true);
                     txtCurrentGoldRate.setVisible(true);
+                    makingChargesPercentageLabel.setVisible(true);
+                    txtMakingChargesPercentage.setVisible(true);
                 } else {
-                    double rate = "Emetation".equalsIgnoreCase(category) ? 
+                    double rate = "Emetation".equalsIgnoreCase(currentCategory) ? 
                         product.getDouble("salesPrice") : 
                         product.getDouble("ratePerPiece");
                     txtPricePerGram.setText(String.valueOf(rate));
                     RateLabel.setText("Rate Per Piece:");
                     goldRateLabel.setVisible(false);
                     txtCurrentGoldRate.setVisible(false);
+                    makingChargesPercentageLabel.setVisible(false);
+                    txtMakingChargesPercentage.setVisible(false);
                 }
                 updateCalculations();
             } else {
@@ -318,71 +358,74 @@ public class StaffProcessSalesPanel extends JPanel {
 
     private void updateCalculations() {
         try {
-            String category = getProductCategory();
             double pricePerUnit = Double.parseDouble(txtPricePerGram.getText());
             int quantity = Integer.parseInt(txtQuantity.getText());
 
-            if (category.equalsIgnoreCase("Gold") || category.equalsIgnoreCase("Silver")) {
+            if (currentCategory.equalsIgnoreCase("Gold") || currentCategory.equalsIgnoreCase("Silver")) {
                 double goldRate = Double.parseDouble(txtCurrentGoldRate.getText());
                 Totalprice = grams * goldRate * quantity;
             } else {
                 Totalprice = pricePerUnit * quantity;
             }
 
-            updateGSTandFinalAmount(Totalprice, category);
+            updateGSTandFinalAmount(Totalprice, currentCategory);
             txtTotalPrice.setText(String.format("%.2f", Totalprice));
         } catch (NumberFormatException ex) {
             resetCalculations();
         }
     }
+    
+    private void updateMakingCharges() {
+        try {
+            double totalPrice = Double.parseDouble(txtTotalPrice.getText().trim());
+            updateGSTandFinalAmount(totalPrice, currentCategory);
+        } catch (NumberFormatException e) {
+            // Ignore if total price is not set yet
+        }
+    }
 
     private void updateGSTandFinalAmount(double totalAmount, String category) {
-        // GST rate is 3% for Emetation, 3% for Gold/Silver, and 18% for others
-        double gstRate = "Emetation".equalsIgnoreCase(category) ? 0.03 :
-                        ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) ? 0.03 : 0.18;
+        double makingChargesRate = 0.0;
+        
+        try {
+            if ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) {
+                // Get making charges percentage from text field (1-100)
+                double percentage = Double.parseDouble(txtMakingChargesPercentage.getText().trim());
+                if (percentage < 0) percentage = 0;
+                if (percentage > 100) percentage = 100;
+                makingChargesRate = percentage / 100.0;
+            }
+        } catch (NumberFormatException e) {
+            makingChargesRate = 0.14; // Default to 14% if invalid input
+        }
+        
+        double makingCharges = totalAmount * makingChargesRate;
+        double newTotal = totalAmount + makingCharges;
 
-        // Making charges are 10% for Gold/Silver, 0% for others
-        double makingChargeRate = ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) ? 0.10 : 0.0;
+        double gstRate = ("Gold".equalsIgnoreCase(category) || "Silver".equalsIgnoreCase(category)) ? 0.03 :
+                        ("Emetation".equalsIgnoreCase(category)) ? 0.03 : 0.18;
+        
+        double gstAmount = newTotal * gstRate;
+        double finalAmount = newTotal + gstAmount;
 
-        // Calculate making charges
-        double makingCharges = totalAmount * makingChargeRate;
-
-        // Calculate GST on the total amount (excluding making charges)
-        double gstAmount = totalAmount * gstRate;
-
-        // Calculate final amount
-        double finalAmount = totalAmount + makingCharges + gstAmount;
-
-        // Update text fields
-        txtGstAmount.setText(String.format("%.2f", gstAmount));
         txtMakingCharges.setText(String.format("%.2f", makingCharges));
+        txtGstAmount.setText(String.format("%.2f", gstAmount));
         txtTotalAmount.setText(String.format("%.2f", finalAmount));
         txtFinalPrice.setText(String.format("%.2f", finalAmount));
     }
 
-    private String getProductCategory() {
-        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
-            return mongoClient.getDatabase("testDB")
-                            .getCollection("Product")
-                            .find(new Document("barcode", txtBarcode.getText().trim()))
-                            .first()
-                            .getString("category");
-        } catch (Exception e) {
-            return "";
-        }
-    }
-
     private void processSale() {
         try {
-            if (txtCustomerName.getText().trim().isEmpty() || cmbStaff.getSelectedItem() == null) {
-                JOptionPane.showMessageDialog(this, "Please fill all required fields");
+            if (txtCustomerName.getText().trim().isEmpty() || cmbStaff.getSelectedItem() == null ||
+                txtPhoneNumber.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill all required fields (Customer Name, Phone Number, and Staff Member)");
                 return;
             }
 
             try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
                 MongoDatabase database = mongoClient.getDatabase("testDB");
                 Document product = database.getCollection("Product")
-                                        .find(new Document("barcode", txtBarcode.getText().trim()))
+                                        .find(new Document("barcodeNumber", txtBarcode.getText().trim()))
                                         .first();
 
                 int currentStock = product.getInteger("stockQuantity");
@@ -394,16 +437,20 @@ public class StaffProcessSalesPanel extends JPanel {
 
                 // Update stock
                 database.getCollection("Product")
-                       .updateOne(new Document("barcode", txtBarcode.getText().trim()),
+                       .updateOne(new Document("barcodeNumber", txtBarcode.getText().trim()),
                                 new Document("$inc", new Document("stockQuantity", -quantity)));
 
                 // Create sale record
                 Document sale = new Document()
                         .append("customerName", txtCustomerName.getText().trim())
+                        .append("phoneNumber", txtPhoneNumber.getText().trim())
+                        .append("address", txtAddress.getText().trim())
                         .append("staff", cmbStaff.getSelectedItem().toString())
                         .append("productName", txtProductName.getText().trim())
                         .append("quantity", quantity)
                         .append("totalPrice", Totalprice)
+                        .append("makingCharges", Double.parseDouble(txtMakingCharges.getText()))
+                        .append("gstAmount", Double.parseDouble(txtGstAmount.getText()))
                         .append("finalPrice", Double.parseDouble(txtFinalPrice.getText()))
                         .append("timestamp", new Date());
 
@@ -434,6 +481,8 @@ public class StaffProcessSalesPanel extends JPanel {
             .append("<hr>")
             .append("<p><b>Date:</b> ").append(new SimpleDateFormat("dd-MM-yyyy HH:mm").format(new Date())).append("</p>")
             .append("<p><b>Customer:</b> ").append(txtCustomerName.getText()).append("</p>")
+            .append("<p><b>Phone:</b> ").append(txtPhoneNumber.getText()).append("</p>")
+            .append("<p><b>Address:</b> ").append(txtAddress.getText()).append("</p>")
             .append("<p><b>Staff:</b> ").append(cmbStaff.getSelectedItem()).append("</p>")
             .append("<h3>Product Details:</h3>");
 
@@ -446,9 +495,14 @@ public class StaffProcessSalesPanel extends JPanel {
         html.append("<p><b>Product:</b> ").append(txtProductName.getText()).append("</p>")
             .append("<p><b>Barcode:</b> ").append(txtBarcode.getText()).append("</p>")
             .append("<p><b>Quantity:</b> ").append(txtQuantity.getText()).append("</p>")
-            .append("<p><b>Total Price:</b> ₹").append(Totalprice).append("</p>")
+            .append("<p><b>Total Price:</b> ₹").append(Totalprice).append("</p>");
+            
+        if ("Gold".equalsIgnoreCase(currentCategory) || "Silver".equalsIgnoreCase(currentCategory)) {
+            html.append("<p><b>Making Charges (%):</b> ").append(txtMakingChargesPercentage.getText()).append("%</p>");
+        }
+            
+        html.append("<p><b>Making Charges:</b> ₹").append(txtMakingCharges.getText()).append("</p>")
             .append("<p><b>GST:</b> ₹").append(txtGstAmount.getText()).append("</p>")
-            .append("<p><b>Making Charges:</b> ₹").append(txtMakingCharges.getText()).append("</p>")
             .append("<p><b>Final Amount:</b> ₹").append(txtFinalPrice.getText()).append("</p>")
             .append("<hr><p style='text-align:center;'>Thank you for your business!</p></body></html>");
 
@@ -498,13 +552,20 @@ public class StaffProcessSalesPanel extends JPanel {
                 pdfDoc.add(new Paragraph("ABC Jewelers - Invoice", titleFont));
                 pdfDoc.add(new Paragraph("Date: " + new SimpleDateFormat("dd-MM-yyyy HH:mm").format(new Date())));
                 pdfDoc.add(new Paragraph("Customer: " + txtCustomerName.getText()));
+                pdfDoc.add(new Paragraph("Phone: " + txtPhoneNumber.getText()));
+                pdfDoc.add(new Paragraph("Address: " + txtAddress.getText()));
                 pdfDoc.add(new Paragraph("Staff: " + cmbStaff.getSelectedItem()));
                 pdfDoc.add(new Paragraph("Product: " + txtProductName.getText()));
                 pdfDoc.add(new Paragraph("Barcode: " + txtBarcode.getText()));
                 pdfDoc.add(new Paragraph("Quantity: " + txtQuantity.getText()));
                 pdfDoc.add(new Paragraph("Total Price: ₹" + Totalprice));
-                pdfDoc.add(new Paragraph("GST: ₹" + txtGstAmount.getText()));
+                
+                if ("Gold".equalsIgnoreCase(currentCategory) || "Silver".equalsIgnoreCase(currentCategory)) {
+                    pdfDoc.add(new Paragraph("Making Charges (%): " + txtMakingChargesPercentage.getText() + "%"));
+                }
+                
                 pdfDoc.add(new Paragraph("Making Charges: ₹" + txtMakingCharges.getText()));
+                pdfDoc.add(new Paragraph("GST: ₹" + txtGstAmount.getText()));
                 pdfDoc.add(new Paragraph("Final Amount: ₹" + txtFinalPrice.getText()));
 
                 pdfDoc.close();
@@ -541,6 +602,8 @@ public class StaffProcessSalesPanel extends JPanel {
 
     private void clearFields() {
         txtCustomerName.setText("");
+        txtPhoneNumber.setText("");
+        txtAddress.setText("");
         txtBarcode.setText("");
         txtProductName.setText("");
         txtPricePerGram.setText("");
@@ -548,6 +611,7 @@ public class StaffProcessSalesPanel extends JPanel {
         txtTotalPrice.setText("");
         txtFinalPrice.setText("");
         txtCurrentGoldRate.setText("");
+        txtMakingChargesPercentage.setText("14");
         resetCalculations();
         cmbStaff.setSelectedIndex(0);
     }
