@@ -1,21 +1,24 @@
- package m3.BillSoftware;
+package m3.BillSoftware;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.result.InsertOneResult;
 import org.bson.Document;
+
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 
 public class AdminLoginRegister extends JFrame {
-    private JPanel mainPanel, formPanel;
+    private JPanel mainPanel, formPanel, buttonPanel;
     private JTextField txtFirstName, txtLastName, txtUsername;
     private JPasswordField txtPassword;
-    private JButton btnLogin, btnRegister, btnToggle, btnAdmin;
-    private JLabel lblFirstName, lblLastName, headerLabel;
+    private JButton btnRegister, btnToggle, btnLogin;
+    private JLabel lblFirstName, lblLastName, headerLabel, imageLabel;
     private boolean isLoginMode = true;
 
     public AdminLoginRegister() {
@@ -26,7 +29,7 @@ public class AdminLoginRegister extends JFrame {
 
         mainPanel = new JPanel(new GridBagLayout());
         mainPanel.setBackground(new Color(241, 242, 246));
-        add(mainPanel, 	BorderLayout.CENTER);
+        add(mainPanel, BorderLayout.CENTER);
 
         initializeUI();
         toggleMode();
@@ -40,27 +43,42 @@ public class AdminLoginRegister extends JFrame {
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Form Panel
         formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(Color.WHITE);
         formPanel.setBorder(BorderFactory.createLineBorder(new Color(40, 58, 82), 2));
-        formPanel.setPreferredSize(new Dimension(400, 400));
+        formPanel.setPreferredSize(new Dimension(600, 600));
 
         GridBagConstraints gbcMain = new GridBagConstraints();
         gbcMain.anchor = GridBagConstraints.CENTER;
         gbcMain.weightx = gbcMain.weighty = 1;
         mainPanel.add(formPanel, gbcMain);
 
-        // Header
-        headerLabel = new JLabel("Staff Login");
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(Color.WHITE);
+        try {
+            Image image = ImageIO.read(getClass().getResource("/images/admin1.jpg"));
+            image = image.getScaledInstance(80, 80, Image.SCALE_SMOOTH);
+            imageLabel = new JLabel(new ImageIcon(image));
+            imageLabel.setHorizontalAlignment(JLabel.CENTER);
+            imageLabel.setBorder(new EmptyBorder(10, 0, 10, 0));
+            headerPanel.add(imageLabel, BorderLayout.CENTER);
+        } catch (Exception e) {
+            imageLabel = new JLabel("LOGO");
+            imageLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+            imageLabel.setHorizontalAlignment(JLabel.CENTER);
+            headerPanel.add(imageLabel, BorderLayout.CENTER);
+        }
+
+        headerLabel = new JLabel("Staff Login", JLabel.CENTER);
         headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         headerLabel.setForeground(new Color(40, 58, 82));
+        headerPanel.add(headerLabel, BorderLayout.SOUTH);
+
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
-        formPanel.add(headerLabel, gbc);
+        formPanel.add(headerPanel, gbc);
 
-        // Username
         gbc.gridy = 1;
         gbc.gridwidth = 1;
         formPanel.add(createLabel("Username:"), gbc);
@@ -68,7 +86,6 @@ public class AdminLoginRegister extends JFrame {
         txtUsername = createTextField();
         formPanel.add(txtUsername, gbc);
 
-        // Password
         gbc.gridy = 2;
         gbc.gridx = 0;
         formPanel.add(createLabel("Password:"), gbc);
@@ -80,7 +97,16 @@ public class AdminLoginRegister extends JFrame {
                 new EmptyBorder(5, 10, 5, 10)));
         formPanel.add(txtPassword, gbc);
 
-        // First Name
+        txtPassword.getDocument().addDocumentListener(new DocumentListener() {
+            void toggleLoginButton() {
+                btnLogin.setVisible(isLoginMode && txtPassword.getPassword().length > 0);
+            }
+
+            public void insertUpdate(DocumentEvent e) { toggleLoginButton(); }
+            public void removeUpdate(DocumentEvent e) { toggleLoginButton(); }
+            public void changedUpdate(DocumentEvent e) { toggleLoginButton(); }
+        });
+
         gbc.gridy = 3;
         gbc.gridx = 0;
         lblFirstName = createLabel("First Name:");
@@ -89,7 +115,6 @@ public class AdminLoginRegister extends JFrame {
         txtFirstName = createTextField();
         formPanel.add(txtFirstName, gbc);
 
-        // Last Name
         gbc.gridy = 4;
         gbc.gridx = 0;
         lblLastName = createLabel("Last Name:");
@@ -98,48 +123,67 @@ public class AdminLoginRegister extends JFrame {
         txtLastName = createTextField();
         formPanel.add(txtLastName, gbc);
 
-     // Buttons
         gbc.gridy = 5;
         gbc.gridx = 0;
         gbc.gridwidth = 2;
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        btnRegister = createButton("Register", new Color(82, 196, 26));
         btnLogin = createButton("Login", new Color(46, 204, 113));
-        btnRegister = createButton("Register", new Color(52, 152, 219));
-        btnToggle = createButton("Switch to Register", new Color(241, 196, 15));
-        btnAdmin = createButton("Staff Login", new Color(155, 89, 182));
-        
-     // Add both btnLogin and btnRegister to the button panel
-        buttonPanel.add(btnLogin);
-        buttonPanel.add(btnRegister);
-        buttonPanel.add(btnToggle);
-        buttonPanel.add(btnAdmin);
+        btnLogin.setVisible(false);
+        btnToggle = createButton("Switch to Login", new Color(24, 144, 255));
 
+        btnToggle.setPreferredSize(new Dimension(200, 40));
+        btnToggle.setBorder(BorderFactory.createLineBorder(new Color(52, 152, 219), 2, true));
+
+        buttonPanel.add(btnRegister);
+        buttonPanel.add(btnLogin);
         formPanel.add(buttonPanel, gbc);
 
-        // Action Listeners
-        btnLogin.addActionListener(e -> handleLogin());
-        btnRegister.addActionListener(e -> handleRegister());
-        btnToggle.addActionListener(e -> toggleMode());
-        btnAdmin.addActionListener(e -> {
-            dispose();
-            new StaffLoginRegister().setVisible(true); // Assume AdminLogin class exists
+        gbc.gridy = 6;
+        JPanel togglePanel = new JPanel(new BorderLayout());
+        JLabel loginHint = new JLabel("You have an account? Then click below:");
+        loginHint.setHorizontalAlignment(JLabel.CENTER);
+        loginHint.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        loginHint.setForeground(new Color(52, 73, 94));
+        togglePanel.add(loginHint, BorderLayout.NORTH);
+        togglePanel.add(btnToggle, BorderLayout.CENTER);
+        formPanel.add(togglePanel, gbc);
+
+        gbc.gridy = 7;
+        JLabel switchPanel = new JLabel("Change to Staff Panel");
+        switchPanel.setForeground(new Color(41, 128, 185));
+        switchPanel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        switchPanel.setHorizontalAlignment(SwingConstants.CENTER);
+        switchPanel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        formPanel.add(switchPanel, gbc);
+
+        switchPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                dispose();
+                new StaffLoginRegister().setVisible(true);
+            }
         });
+
+        btnToggle.addActionListener(e -> toggleMode());
+        btnRegister.addActionListener(e -> handleRegister());
+        btnLogin.addActionListener(e -> handleLogin());
     }
 
     private void toggleMode() {
         isLoginMode = !isLoginMode;
+
         lblFirstName.setVisible(!isLoginMode);
         lblLastName.setVisible(!isLoginMode);
         txtFirstName.setVisible(!isLoginMode);
         txtLastName.setVisible(!isLoginMode);
-        btnLogin.setVisible(isLoginMode);
+
         btnRegister.setVisible(!isLoginMode);
+        btnLogin.setVisible(isLoginMode && txtPassword.getPassword().length > 0);
+
         btnToggle.setText(isLoginMode ? "Switch to Register" : "Switch to Login");
         headerLabel.setText(isLoginMode ? "Admin Login" : "Admin Register");
-        
-        // Change border color
-        Color borderColor = isLoginMode ? new Color(40, 58, 82) : new Color(52, 152, 219);
-        formPanel.setBorder(BorderFactory.createLineBorder(borderColor, 2));
+        formPanel.setBorder(BorderFactory.createLineBorder(
+                isLoginMode ? new Color(40, 58, 82) : new Color(52, 152, 219), 2));
     }
 
     private void handleLogin() {
@@ -154,14 +198,7 @@ public class AdminLoginRegister extends JFrame {
             if (user != null) {
                 JOptionPane.showMessageDialog(this, "Login Successful");
                 dispose();
-                
-                // Get user details from database
-                String loggedInUsername = user.getString("username");
-                String loggedInFirstName = user.getString("firstname");
-                String loggedInLastName = user.getString("lastname");
-                
-                // Open ProductRegistration with user details
-                new ProductRegistration(loggedInUsername, loggedInFirstName, loggedInLastName).setVisible(true);
+                new ProductRegistration(username, username, username).setVisible(true);
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid Username or Password");
             }
@@ -170,21 +207,15 @@ public class AdminLoginRegister extends JFrame {
         }
     }
 
-
     private void handleRegister() {
-        String firstName = txtFirstName.getText();
-        String lastName = txtLastName.getText();
-        String username = txtUsername.getText();
-        String password = new String(txtPassword.getPassword());
-
         try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> collection = database.getCollection("User");
 
-            Document doc = new Document("firstname", firstName)
-                    .append("lastname", lastName)
-                    .append("username", username)
-                    .append("password", password);
+            Document doc = new Document("firstname", txtFirstName.getText())
+                    .append("lastname", txtLastName.getText())
+                    .append("username", txtUsername.getText())
+                    .append("password", new String(txtPassword.getPassword()));
 
             collection.insertOne(doc);
             JOptionPane.showMessageDialog(this, "Registration Successful");
@@ -206,8 +237,7 @@ public class AdminLoginRegister extends JFrame {
         textField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         textField.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(200, 200, 200)),
-                new EmptyBorder(5, 10, 5, 10)
-        ));
+                new EmptyBorder(5, 10, 5, 10)));
         return textField;
     }
 
@@ -222,17 +252,6 @@ public class AdminLoginRegister extends JFrame {
     }
 
     public static void main(String[] args) {
-        new AdminLoginRegister();
-    }
-}
-
-class AdminLogin extends JFrame {
-    // Similar implementation for admin login
-    public AdminLogin() {
-        setTitle("Admin Login");
-        // Add similar login components
-        setSize(400, 300);
-        setLocationRelativeTo(null);
-        setVisible(true);
+        SwingUtilities.invokeLater(() -> new AdminLoginRegister());
     }
 }

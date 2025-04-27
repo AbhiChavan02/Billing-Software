@@ -1,6 +1,8 @@
 package m3.BillSoftware;
 
 import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -46,7 +48,7 @@ public class SalesHistoryPanel extends JPanel {
     private MongoClient mongoClient;
     private MongoDatabase database;
     private ExecutorService executorService;
-    private List<SalesRecord> allSalesRecords; // Store all sales records for filtering and sorting
+    private List<SalesRecord> allSalesRecords;
 
     public SalesHistoryPanel() {
         setLayout(new BorderLayout());
@@ -77,14 +79,13 @@ public class SalesHistoryPanel extends JPanel {
     }
 
     private void createUI() {
-        // Table model setup
         tableModel = new DefaultTableModel(new Object[]{
                 "Barcode", "Category", "Product Name", "Product Image", "Total Amount",
                 "Final Price", "Profit", "Customer Name", "Seller", "Date", "Invoice"
         }, 0) {
             @Override
             public Class<?> getColumnClass(int column) {
-                return column == 3 ? ImageIcon.class : Object.class; // Column 3 is for images
+                return column == 3 ? ImageIcon.class : Object.class;
             }
         };
 
@@ -93,7 +94,6 @@ public class SalesHistoryPanel extends JPanel {
         salesTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         salesTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-        // Set cell borders
         salesTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
@@ -104,22 +104,19 @@ public class SalesHistoryPanel extends JPanel {
             }
         });
 
-        salesTable.getColumnModel().getColumn(3).setPreferredWidth(90); // Product Image column
-        salesTable.getColumnModel().getColumn(10).setPreferredWidth(100); // Invoice column
+        salesTable.getColumnModel().getColumn(3).setPreferredWidth(90);
+        salesTable.getColumnModel().getColumn(10).setPreferredWidth(100);
 
-        // Set custom renderer and editor for the "Invoice" column
         salesTable.getColumnModel().getColumn(10).setCellRenderer(new ButtonCellRenderer());
         salesTable.getColumnModel().getColumn(10).setCellEditor(new ButtonCellEditor());
 
         JScrollPane scrollPane = new JScrollPane(salesTable);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Filter panel setup
-        JPanel filterPanel = new JPanel(new GridLayout(2, 1)); // Use GridLayout for better organization
+        JPanel filterPanel = new JPanel(new GridLayout(2, 1));
         filterPanel.setBackground(formColor);
         filterPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Top row for filters and search
         JPanel topRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
         topRow.setBackground(formColor);
 
@@ -156,28 +153,25 @@ public class SalesHistoryPanel extends JPanel {
 
         filterPanel.add(topRow);
 
-        // Bottom row for sort buttons, total collection, and profit
         JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
         bottomRow.setBackground(formColor);
 
-        // Add sort buttons
-        JButton btnSortGold = createActionButton("Sort Gold Sales", new Color(241, 196, 15)); // Yellow
+        JButton btnSortGold = createActionButton("Sort Gold Sales", new Color(241, 196, 15));
         btnSortGold.addActionListener(e -> sortSalesByCategory("Gold"));
         bottomRow.add(btnSortGold);
 
-        JButton btnSortEmetation = createActionButton("Sort Emetation Sales", new Color(46, 204, 113)); // Green
+        JButton btnSortEmetation = createActionButton("Sort Emetation Sales", new Color(46, 204, 113));
         btnSortEmetation.addActionListener(e -> sortSalesByCategory("Emetation"));
         bottomRow.add(btnSortEmetation);
 
-        JButton btnSortSilver = createActionButton("Sort Silver Sales", new Color(231, 76, 60)); // Red
+        JButton btnSortSilver = createActionButton("Sort Silver Sales", new Color(231, 76, 60));
         btnSortSilver.addActionListener(e -> sortSalesByCategory("Silver"));
         bottomRow.add(btnSortSilver);
 
-        // Add total collection and profit labels
         totalCollectionLabel = new JLabel("Total Collection: ₹0.00");
         bottomRow.add(totalCollectionLabel);
 
-        totalProfitLabel = new JLabel("Expense (Emetation): ₹0.00");
+        totalProfitLabel = new JLabel("Total Profit (Emetation): ₹0.00");
         bottomRow.add(totalProfitLabel);
 
         filterPanel.add(bottomRow);
@@ -237,24 +231,21 @@ public class SalesHistoryPanel extends JPanel {
             String productName = sale.getString("productName");
             Document product = productCache.getOrDefault(productName, new Document());
 
-            // Fetch category directly from the product document
-            String category = product.getString("category"); // Assuming "category" is the field name in the Product collection
+            String category = product.getString("category");
             if (category == null) {
-                category = "Unknown"; // Default category if not specified
+                category = "Unknown";
             }
 
-            // Determine seller type
             String seller = sale.containsKey("staff") ?
                     "Staff: " + sale.getString("staff") : "Admin";
 
-            // Create SalesRecord using getDoubleValue
             SalesRecord record = new SalesRecord(
                     product.getString("barcodeNumber"),
                     category,
                     productName,
                     product.getString("productImagePath"),
-                    getDoubleValue(sale, "totalPrice"), // Use getDoubleValue for totalPrice
-                    getDoubleValue(sale, "finalPrice"), // Use getDoubleValue for finalPrice
+                    getDoubleValue(sale, "totalPrice"),
+                    getDoubleValue(sale, "finalPrice"),
                     sale.getString("customerName"),
                     seller,
                     sale.getDate("timestamp")
@@ -268,17 +259,17 @@ public class SalesHistoryPanel extends JPanel {
         if (document.containsKey(key)) {
             Object value = document.get(key);
             if (value instanceof Number) {
-                return ((Number) value).doubleValue(); // Extract double value from Number
+                return ((Number) value).doubleValue();
             } else if (value instanceof String) {
                 try {
-                    return Double.parseDouble((String) value); // Parse string to double
+                    return Double.parseDouble((String) value);
                 } catch (NumberFormatException e) {
                     System.err.println("Invalid number format for key: " + key);
-                    return 0.0; // Return default value if parsing fails
+                    return 0.0;
                 }
             }
         }
-        return 0.0; // Return default value if key is missing or value is invalid
+        return 0.0;
     }
 
     private void populateTable(List<SalesRecord> records) {
@@ -309,8 +300,8 @@ public class SalesHistoryPanel extends JPanel {
 
     private void updateRowImage(SalesRecord record, ImageIcon image) {
         for (int i = 0; i < tableModel.getRowCount(); i++) {
-            if (Objects.equals(tableModel.getValueAt(i, 2), record.productName)) { // Check product name column
-                tableModel.setValueAt(image, i, 3); // Update product image column
+            if (Objects.equals(tableModel.getValueAt(i, 2), record.productName)) {
+                tableModel.setValueAt(image, i, 3);
                 break;
             }
         }
@@ -320,7 +311,6 @@ public class SalesHistoryPanel extends JPanel {
         JButton downloadButton = createActionButton("Download", new Color(52, 152, 219));
         downloadButton.addActionListener(e -> generateInvoice(record, image));
 
-        // Calculate profit
         double profit = record.finalPrice - record.totalPrice;
 
         return new Object[]{
@@ -328,9 +318,9 @@ public class SalesHistoryPanel extends JPanel {
                 record.category != null ? record.category : "",
                 record.productName != null ? record.productName : "",
                 image,
-                record.totalPrice, // Store as Double
-                record.finalPrice, // Store as Double
-                profit, // Store as Double
+                record.totalPrice,
+                record.finalPrice,
+                profit,
                 record.customerName != null ? record.customerName : "",
                 record.staff != null ? record.staff : "",
                 record.timestamp != null ? new SimpleDateFormat("EEE MMM dd").format(record.timestamp) : "",
@@ -344,12 +334,11 @@ public class SalesHistoryPanel extends JPanel {
 
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             try {
-                double totalAmount = (Double) tableModel.getValueAt(i, 4); // Total Amount column
-                double profit = (Double) tableModel.getValueAt(i, 6); // Profit column
+                double totalAmount = (Double) tableModel.getValueAt(i, 4);
+                double profit = (Double) tableModel.getValueAt(i, 6);
                 totalCollection += totalAmount;
 
-                // Calculate profit only for Emetation products
-                String category = (String) tableModel.getValueAt(i, 1); // Product Type column
+                String category = (String) tableModel.getValueAt(i, 1);
                 if (category != null && category.equalsIgnoreCase("Emetation")) {
                     totalProfit += profit;
                 }
@@ -358,7 +347,6 @@ public class SalesHistoryPanel extends JPanel {
             }
         }
 
-        // Update labels with ₹ sign
         totalCollectionLabel.setText("Total Collection: ₹" + String.format("%.2f", totalCollection));
         totalProfitLabel.setText("Total Profit (Emetation): ₹" + String.format("%.2f", totalProfit));
     }
@@ -380,16 +368,13 @@ public class SalesHistoryPanel extends JPanel {
 
         List<SalesRecord> filteredRecords = new ArrayList<>();
         for (SalesRecord record : allSalesRecords) {
-            // Filter by month
             String recordMonth = record.timestamp != null ? 
                 new SimpleDateFormat("MMMM").format(record.timestamp) : "";
             boolean matchesMonth = selectedMonth.equals("All") || recordMonth.equalsIgnoreCase(selectedMonth);
 
-            // Filter by product
             boolean matchesProduct = selectedProduct.equals("All") || 
                 (record.category != null && record.category.equalsIgnoreCase(selectedProduct));
 
-            // Filter by search text
             boolean matchesSearch = searchText.isEmpty() ||
                 (record.barcodeNumber != null && record.barcodeNumber.toLowerCase().contains(searchText)) ||
                 (record.productName != null && record.productName.toLowerCase().contains(searchText)) ||
@@ -407,165 +392,413 @@ public class SalesHistoryPanel extends JPanel {
     private void generateInvoice(SalesRecord record, ImageIcon image) {
         try {
             double savings = record.totalPrice - record.finalPrice;
-
-            JDialog invoiceDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Invoice", true);
-            invoiceDialog.setLayout(new BorderLayout());
-
-            JPanel invoicePanel = new JPanel();
-            invoicePanel.setLayout(new BoxLayout(invoicePanel, BoxLayout.Y_AXIS));
-            invoicePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
-            invoicePanel.add(new JLabel("<html><h2>Invoice</h2></html>"));
-            invoicePanel.add(new JLabel("Barcode: " + (record.barcodeNumber != null ? record.barcodeNumber : "")));
-            invoicePanel.add(new JLabel("Category: " + (record.category != null ? record.category : "")));
-            invoicePanel.add(new JLabel("Product: " + (record.productName != null ? record.productName : "")));
-            invoicePanel.add(new JLabel("Total Price: ₹" + String.format("%.2f", record.totalPrice))); // Add ₹ sign
-            invoicePanel.add(new JLabel("Final Price: ₹" + String.format("%.2f", record.finalPrice))); // Add ₹ sign
-            invoicePanel.add(new JLabel("Savings: ₹" + String.format("%.2f", savings))); // Add ₹ sign
-            invoicePanel.add(new JLabel("Customer: " + (record.customerName != null ? record.customerName : "")));
-            invoicePanel.add(new JLabel("Seller: " + (record.staff != null ? record.staff : "")));
-            invoicePanel.add(new JLabel("Date: " + (record.timestamp != null ? 
-                new SimpleDateFormat("EEE MMM dd").format(record.timestamp) : "")));
-
-            JLabel imageLabel = new JLabel(image);
-            imageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-            invoicePanel.add(Box.createVerticalStrut(10));
-            invoicePanel.add(imageLabel);
-
-            JButton downloadButton = createActionButton("Download", new Color(52, 152, 219));
-            invoicePanel.add(Box.createVerticalStrut(10));
-            invoicePanel.add(downloadButton);
-
-            downloadButton.addActionListener(e -> {
-                downloadInvoiceAsPDF(record, image);
-                JOptionPane.showMessageDialog(invoiceDialog, "Invoice Downloaded!", "Success",
-                        JOptionPane.INFORMATION_MESSAGE);
-            });
-
-            invoiceDialog.add(invoicePanel, BorderLayout.CENTER);
-
-            JButton closeButton = new JButton("Close");
-            closeButton.addActionListener(e -> invoiceDialog.dispose());
-
-            JPanel buttonPanel = new JPanel();
-            buttonPanel.add(closeButton);
-            invoiceDialog.add(buttonPanel, BorderLayout.SOUTH);
-
-            invoiceDialog.setSize(350, 450);
-            invoiceDialog.setLocationRelativeTo(this);
-            invoiceDialog.setVisible(true);
+            
+            // Create invoice data
+            InvoiceData invoiceData = new InvoiceData();
+            invoiceData.shopName = "RJ JEWELS";
+            invoiceData.shopAddress = "123 Jewelry Street, Mumbai, Maharashtra 400001";
+            invoiceData.invoiceNumber = "INV-" + new SimpleDateFormat("yyyyMMdd").format(new Date()) + "-" + 
+                                      (int)(Math.random() * 1000);
+            invoiceData.invoiceDate = new SimpleDateFormat("dd/MM/yyyy").format(new Date());
+            
+            invoiceData.customerName = record.customerName;
+            invoiceData.customerPhone = "";
+            invoiceData.customerAddress = "";
+            invoiceData.gstin = "";
+            invoiceData.pan = "";
+            invoiceData.placeOfSupply = "27-Maharashtra";
+            
+            InvoiceItem item = new InvoiceItem();
+            item.description = record.productName;
+            item.hsnCode = "7117";
+            item.quantity = 1;
+            item.rate = record.totalPrice;
+            item.gstPercent = 3.0;
+            item.amount = record.totalPrice;
+            
+            invoiceData.items = Arrays.asList(item);
+            invoiceData.taxableValue = record.totalPrice;
+            invoiceData.gstAmount = record.finalPrice - record.totalPrice;
+            invoiceData.grandTotal = record.finalPrice;
+            invoiceData.roundOff = 0.0;
+            
+            // Create invoice dialog
+            showInvoiceDialog(invoiceData, image);
+            
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error generating invoice: " + e.getMessage());
         }
     }
+    
+    private void showInvoiceDialog(InvoiceData invoiceData, ImageIcon productImage) {
+        JDialog invoiceDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Invoice", true);
+        invoiceDialog.setLayout(new BorderLayout());
+        
+        JPanel invoicePanel = new JPanel();
+        invoicePanel.setLayout(new BoxLayout(invoicePanel, BoxLayout.Y_AXIS));
+        invoicePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        // Header
+        JLabel shopNameLabel = new JLabel(invoiceData.shopName);
+        shopNameLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        shopNameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        JLabel shopAddressLabel = new JLabel("<html><center>" + invoiceData.shopAddress.replace("\n", "<br>") + "</center></html>");
+        shopAddressLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        shopAddressLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        JLabel debitMemoLabel = new JLabel("Debit Memo");
+        debitMemoLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        debitMemoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        JLabel billedToLabel = new JLabel("Name & Address of the Receiptant (Billed To)");
+        billedToLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        billedToLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        JLabel customerLabel = new JLabel(invoiceData.customerName);
+        customerLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        customerLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        JLabel customerAddressLabel = new JLabel(invoiceData.customerAddress);
+        customerAddressLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        customerAddressLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        // Customer details section
+        JPanel customerDetailsPanel = new JPanel();
+        customerDetailsPanel.setLayout(new BoxLayout(customerDetailsPanel, BoxLayout.Y_AXIS));
+        customerDetailsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        customerDetailsPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        
+        JLabel mobileLabel = new JLabel("Mobile No.: " + invoiceData.customerPhone);
+        mobileLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        
+        JLabel gstinLabel = new JLabel("GSTIN No.: " + invoiceData.gstin);
+        gstinLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        
+        JLabel panLabel = new JLabel("PAN No.: " + invoiceData.pan);
+        panLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        
+        JLabel placeOfSupplyLabel = new JLabel("Place of Supply: " + invoiceData.placeOfSupply);
+        placeOfSupplyLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        
+        customerDetailsPanel.add(mobileLabel);
+        customerDetailsPanel.add(gstinLabel);
+        customerDetailsPanel.add(panLabel);
+        customerDetailsPanel.add(placeOfSupplyLabel);
+        
+        // Invoice details
+        JPanel invoiceDetailsPanel = new JPanel(new GridLayout(0, 2));
+        invoiceDetailsPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        addInvoiceDetail(invoiceDetailsPanel, "Invoice No.", invoiceData.invoiceNumber);
+        addInvoiceDetail(invoiceDetailsPanel, "Date", invoiceData.invoiceDate);
+        addInvoiceDetail(invoiceDetailsPanel, "E Way Bill No.", "");
+        addInvoiceDetail(invoiceDetailsPanel, "P. O. No.", "");
+        addInvoiceDetail(invoiceDetailsPanel, "P. O. Date", "");
+        
+        // Items table
+        String[] columnNames = {"Sr", "Description of Goods", "HSN/SAC", "Quantity", "Rate", "GST%", "Amount"};
+        Object[][] rowData = new Object[invoiceData.items.size()][7];
+        
+        for (int i = 0; i < invoiceData.items.size(); i++) {
+            InvoiceItem item = invoiceData.items.get(i);
+            rowData[i][0] = i + 1;
+            rowData[i][1] = item.description;
+            rowData[i][2] = item.hsnCode;
+            rowData[i][3] = item.quantity;
+            rowData[i][4] = item.rate;
+            rowData[i][5] = item.gstPercent;
+            rowData[i][6] = item.amount;
+        }
+        
+        JTable itemsTable = new JTable(rowData, columnNames);
+        itemsTable.setFont(new Font("Arial", Font.PLAIN, 12));
+        itemsTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
+        JScrollPane tableScrollPane = new JScrollPane(itemsTable);
+        
+        // Product image
+        JLabel imageLabel = new JLabel(productImage);
+        imageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        // Totals section
+        JPanel totalsPanel = new JPanel(new GridLayout(0, 3));
+        totalsPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-    private void downloadInvoiceAsPDF(SalesRecord record, ImageIcon image) {
-        try {
-            String[] options = {"Print", "E-Invoice"};
-            int choice = JOptionPane.showOptionDialog(this, "Select an option:", "Download Invoice",
-                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+        addTotalDetail(totalsPanel, "Taxable Value", String.format("%.2f", invoiceData.taxableValue));
+        addTotalDetail(totalsPanel, "GST " + invoiceData.items.get(0).gstPercent + "%", 
+                      String.format("%.2f", invoiceData.gstAmount));
+        addTotalDetail(totalsPanel, "Grand Total", String.format("%.2f", invoiceData.grandTotal));
+        
+        // Terms and conditions
+        JTextArea termsArea = new JTextArea();
+        termsArea.setText("Terms & Condition:\n" +
+                         "1. Goods once sold will not be taken back.\n" +
+                         "2. Interest @18% p.a. will be charged if payment is not received within Due date.\n" +
+                         "3. Our risk and responsibility ceases as soon as the material leaves our premises.\n" +
+                         "4. Subject To Kolkata Jurisdiction Only. E. & O.E.");
+        termsArea.setFont(new Font("Arial", Font.PLAIN, 10));
+        termsArea.setEditable(false);
+        termsArea.setBackground(invoicePanel.getBackground());
+        
+        // Footer
+        JLabel gstinFooterLabel = new JLabel("Company's GST IN No.: " + invoiceData.gstin);
+        gstinFooterLabel.setFont(new Font("Arial", Font.PLAIN, 10));
+        gstinFooterLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        JLabel signatoryLabel = new JLabel("For, " + invoiceData.shopName);
+        signatoryLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        signatoryLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        JLabel authSignLabel = new JLabel("(Authorised Signatory)");
+        authSignLabel.setFont(new Font("Arial", Font.PLAIN, 10));
+        authSignLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        // Add all components to invoice panel
+        invoicePanel.add(shopNameLabel);
+        invoicePanel.add(shopAddressLabel);
+        invoicePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        invoicePanel.add(debitMemoLabel);
+        invoicePanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        invoicePanel.add(billedToLabel);
+        invoicePanel.add(customerLabel);
+        invoicePanel.add(customerAddressLabel);
+        invoicePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        invoicePanel.add(customerDetailsPanel);
+        invoicePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        invoicePanel.add(invoiceDetailsPanel);
+        invoicePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        invoicePanel.add(tableScrollPane);
+        invoicePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        invoicePanel.add(imageLabel);
+        invoicePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        invoicePanel.add(totalsPanel);
+        invoicePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        invoicePanel.add(termsArea);
+        invoicePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        invoicePanel.add(gstinFooterLabel);
+        invoicePanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        invoicePanel.add(signatoryLabel);
+        invoicePanel.add(authSignLabel);
+        
+        // Buttons
+        JButton btnPrint = new JButton("Print Invoice");
+        btnPrint.addActionListener(e -> printInvoice(invoiceData));
+        
+        JButton btnDownloadPDF = new JButton("Download PDF");
+        btnDownloadPDF.addActionListener(e -> downloadInvoiceAsPDF(invoiceData));
+        
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(btnPrint);
+        buttonPanel.add(btnDownloadPDF);
+        
+        invoiceDialog.add(new JScrollPane(invoicePanel), BorderLayout.CENTER);
+        invoiceDialog.add(buttonPanel, BorderLayout.SOUTH);
+        invoiceDialog.setSize(600, 800);
+        invoiceDialog.setLocationRelativeTo(this);
+        invoiceDialog.setVisible(true);
+    }
+    
+    private void addInvoiceDetail(JPanel panel, String label, String value) {
+        JLabel labelLabel = new JLabel(label + ":");
+        labelLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        
+        JLabel valueLabel = new JLabel(value);
+        valueLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        
+        panel.add(labelLabel);
+        panel.add(valueLabel);
+    }
 
-            double savings = record.totalPrice - record.finalPrice;
+    private void addTotalDetail(JPanel panel, String label, String value) {
+        JLabel labelLabel = new JLabel(label);
+        labelLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        
+        JLabel valueLabel = new JLabel(value);
+        valueLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        
+        panel.add(labelLabel);
+        panel.add(new JLabel(""));
+        panel.add(valueLabel);
+    }
 
-            com.itextpdf.text.Document pdfDoc = new com.itextpdf.text.Document();
-            File file;
-
-            if (choice == 1) {
-                JFileChooser fileChooser = new JFileChooser();
-                fileChooser.setDialogTitle("Save E-Invoice");
-                fileChooser.setSelectedFile(new File(
-                    (record.productName != null ? record.productName : "Invoice") + "_E-Invoice.pdf"));
-                if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-                    file = fileChooser.getSelectedFile();
-                    if (!file.getName().toLowerCase().endsWith(".pdf")) {
-                        file = new File(file.getAbsolutePath() + ".pdf");
-                    }
-                } else {
-                    return;
-                }
-            } else {
-                file = new File(System.getProperty("java.io.tmpdir"), 
-                    (record.productName != null ? record.productName : "Invoice") + "_Invoice.pdf");
+    private void printInvoice(InvoiceData invoiceData) {
+        PrinterJob job = PrinterJob.getPrinterJob();
+        job.setJobName("Invoice Print");
+        if (job.printDialog()) {
+            try {
+                job.print();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Print Error: " + ex.getMessage());
             }
-
-            PdfWriter.getInstance(pdfDoc, new FileOutputStream(file));
-            pdfDoc.open();
-
-            pdfDoc.add(new Paragraph("Invoice"));
-            pdfDoc.add(new Paragraph(" "));
-            pdfDoc.add(new Paragraph("Barcode: " + (record.barcodeNumber != null ? record.barcodeNumber : "")));
-            pdfDoc.add(new Paragraph("Category: " + (record.category != null ? record.category : "")));
-            pdfDoc.add(new Paragraph("Product Name: " + (record.productName != null ? record.productName : "")));
-            pdfDoc.add(new Paragraph("Total Price: ₹" + String.format("%.2f", record.totalPrice))); // Add ₹ sign
-            pdfDoc.add(new Paragraph("Final Price: ₹" + String.format("%.2f", record.finalPrice))); // Add ₹ sign
-            pdfDoc.add(new Paragraph("Savings: ₹" + String.format("%.2f", savings))); // Add ₹ sign
-            pdfDoc.add(new Paragraph("Customer Name: " + (record.customerName != null ? record.customerName : "")));
-            pdfDoc.add(new Paragraph("Seller: " + (record.staff != null ? record.staff : "")));
-            pdfDoc.add(new Paragraph("Date: " + (record.timestamp != null ? 
-                new SimpleDateFormat("EEE MMM dd").format(record.timestamp) : "")));
-            pdfDoc.add(new Paragraph(" "));
-            pdfDoc.add(new Paragraph("Thank you for your business!"));
-
-            pdfDoc.close();
-
-            if (choice == 0) {
-                printPDF(file);
-            } else {
-                JOptionPane.showMessageDialog(this, "E-Invoice saved successfully: " + file.getAbsolutePath());
-            }
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error generating PDF: " + e.getMessage());
         }
     }
 
-    private void printPDF(File file) {
-        try {
-            PDDocument document = PDDocument.load(file);
-            PrinterJob job = PrinterJob.getPrinterJob();
-
-            if (job.printDialog()) {
-                job.setPageable(new PDFPageable(document));
-                job.print();
-                JOptionPane.showMessageDialog(this, "Printing started...");
-            } else {
-                JOptionPane.showMessageDialog(this, "Printing cancelled.");
+    private void downloadInvoiceAsPDF(InvoiceData invoiceData) {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Save Invoice as PDF");
+        
+        if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            if (!file.getName().toLowerCase().endsWith(".pdf")) {
+                file = new File(file.getAbsolutePath() + ".pdf");
             }
+            
+            com.itextpdf.text.Document document = new com.itextpdf.text.Document(PageSize.A4);
+            try {
+                PdfWriter.getInstance(document, new FileOutputStream(file));
+                document.open();
+                
+                addPdfContent(document, invoiceData);
+                
+                JOptionPane.showMessageDialog(this, "Invoice saved as PDF: " + file.getAbsolutePath());
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "Error saving PDF: " + e.getMessage());
+            } finally {
+                if (document != null && document.isOpen()) {
+                    document.close();
+                }
+            }
+        }
+    }
 
-            document.close();
-        } catch (IOException | PrinterException e) {
-            JOptionPane.showMessageDialog(this, "Printing error: " + e.getMessage());
+    private void addPdfContent(com.itextpdf.text.Document document, InvoiceData invoiceData) throws DocumentException {
+        com.itextpdf.text.Font titleFont = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 18, Font.BOLD);
+        com.itextpdf.text.Font headerFont = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 12, Font.BOLD);
+        com.itextpdf.text.Font normalFont = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 10, com.itextpdf.text.Font.NORMAL);
+        
+        Paragraph shopHeader = new Paragraph(invoiceData.shopName + "\n", titleFont);
+        shopHeader.setAlignment(Element.ALIGN_CENTER);
+        document.add(shopHeader);
+        
+        Paragraph shopAddress = new Paragraph(invoiceData.shopAddress + "\n\n", normalFont);
+        shopAddress.setAlignment(Element.ALIGN_CENTER);
+        document.add(shopAddress);
+        
+        Paragraph debitMemo = new Paragraph("Debit Memo\n", headerFont);
+        debitMemo.setAlignment(Element.ALIGN_CENTER);
+        document.add(debitMemo);
+        
+        document.add(new Paragraph("Name & Address of the Receiptant (Billed To)", normalFont));
+        document.add(new Paragraph(invoiceData.customerName, headerFont));
+        document.add(new Paragraph(invoiceData.customerAddress + "\n", normalFont));
+        
+        document.add(new Paragraph("Mobile No.: " + invoiceData.customerPhone, normalFont));
+        document.add(new Paragraph("GSTIN No.: " + invoiceData.gstin, normalFont));
+        document.add(new Paragraph("PAN No.: " + invoiceData.pan, normalFont));
+        document.add(new Paragraph("Place of Supply: " + invoiceData.placeOfSupply + "\n", normalFont));
+        
+        PdfPTable detailsTable = new PdfPTable(2);
+        detailsTable.setWidthPercentage(100);
+        
+        addPdfCell(detailsTable, "Invoice No.:", invoiceData.invoiceNumber, normalFont);
+        addPdfCell(detailsTable, "Date:", invoiceData.invoiceDate, normalFont);
+        addPdfCell(detailsTable, "E Way Bill No.:", "", normalFont);
+        addPdfCell(detailsTable, "P. O. No.:", "", normalFont);
+        addPdfCell(detailsTable, "P. O. Date:", "", normalFont);
+        
+        document.add(detailsTable);
+        document.add(new Paragraph("\n"));
+        
+        PdfPTable itemsTable = new PdfPTable(7);
+        itemsTable.setWidthPercentage(100);
+        itemsTable.setWidths(new float[]{0.5f, 2.5f, 1f, 1f, 1f, 1f, 1f});
+        
+        addPdfHeaderCell(itemsTable, "Sr", headerFont);
+        addPdfHeaderCell(itemsTable, "Description of Goods", headerFont);
+        addPdfHeaderCell(itemsTable, "HSN/SAC", headerFont);
+        addPdfHeaderCell(itemsTable, "Quantity", headerFont);
+        addPdfHeaderCell(itemsTable, "Rate", headerFont);
+        addPdfHeaderCell(itemsTable, "GST%", headerFont);
+        addPdfHeaderCell(itemsTable, "Amount", headerFont);
+        
+        for (InvoiceItem item : invoiceData.items) {
+            itemsTable.addCell(new PdfPCell(new Phrase(String.valueOf(invoiceData.items.indexOf(item) + 1), normalFont)));
+            itemsTable.addCell(new PdfPCell(new Phrase(item.description, normalFont)));
+            itemsTable.addCell(new PdfPCell(new Phrase(item.hsnCode, normalFont)));
+            itemsTable.addCell(new PdfPCell(new Phrase(String.valueOf(item.quantity), normalFont)));
+            itemsTable.addCell(new PdfPCell(new Phrase(String.valueOf(item.rate), normalFont)));
+            itemsTable.addCell(new PdfPCell(new Phrase(String.valueOf(item.gstPercent), normalFont)));
+            itemsTable.addCell(new PdfPCell(new Phrase(String.valueOf(item.amount), normalFont)));
+        }
+        
+        document.add(itemsTable);
+        document.add(new Paragraph("\n"));
+        
+        PdfPTable totalsTable = new PdfPTable(3);
+        totalsTable.setWidthPercentage(100);
+        totalsTable.setWidths(new float[]{2f, 1f, 1f});
+        
+        addPdfCell(totalsTable, "", "Taxable Value", normalFont);
+        addPdfCell(totalsTable, "", String.format("%.2f", invoiceData.taxableValue), normalFont);
+        addPdfCell(totalsTable, "", "GST " + invoiceData.items.get(0).gstPercent + "%", normalFont);
+        addPdfCell(totalsTable, "", String.format("%.2f", invoiceData.gstAmount), normalFont);
+        addPdfCell(totalsTable, "", "Grand Total", normalFont);
+        addPdfCell(totalsTable, "", String.format("%.2f", invoiceData.grandTotal), normalFont);
+        
+        document.add(totalsTable);
+        document.add(new Paragraph("\n"));
+        
+        Paragraph terms = new Paragraph("Terms & Condition:\n" +
+                                      "1. Goods once sold will not be taken back.\n" +
+                                      "2. Interest @18% p.a. will be charged if payment is not received within Due date.\n" +
+                                      "3. Our risk and responsibility ceases as soon as the material leaves our premises.\n" +
+                                      "4. Subject To Kolkata Jurisdiction Only. E. & O.E.", normalFont);
+        document.add(terms);
+        
+        Paragraph footer = new Paragraph("\nCompany's GST IN No.: " + invoiceData.gstin + "\n\n", normalFont);
+        footer.setAlignment(Element.ALIGN_CENTER);
+        document.add(footer);
+        
+        Paragraph signatory = new Paragraph("For, " + invoiceData.shopName + "\n", headerFont);
+        signatory.setAlignment(Element.ALIGN_CENTER);
+        document.add(signatory);
+        
+        Paragraph authSign = new Paragraph("(Authorised Signatory)", normalFont);
+        authSign.setAlignment(Element.ALIGN_CENTER);
+        document.add(authSign);
+    }
+
+    private void addPdfHeaderCell(PdfPTable table, String text, com.itextpdf.text.Font font) {
+        PdfPCell cell = new PdfPCell(new Phrase(text, font));
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cell.setBackgroundColor(new BaseColor(220, 220, 220));
+        table.addCell(cell);
+    }
+
+    private void addPdfCell(PdfPTable table, String label, String value, com.itextpdf.text.Font normalFont) {
+        if (!label.isEmpty()) {
+            table.addCell(new PdfPCell(new Phrase(label, normalFont)));
+        } else {
+            table.addCell(new PdfPCell(new Phrase("", normalFont)));
+        }
+        
+        if (!value.isEmpty()) {
+            PdfPCell valueCell = new PdfPCell(new Phrase(value, normalFont));
+            valueCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            table.addCell(valueCell);
+        } else {
+            table.addCell(new PdfPCell(new Phrase("", normalFont)));
         }
     }
 
     private ImageIcon loadProductImage(String imageUrl) {
         try {
             if (imageUrl != null && !imageUrl.isEmpty()) {
-                System.out.println("Loading image from URL: " + imageUrl); // Debug: Print the image URL
                 Image image = new ImageIcon(new URL(imageUrl)).getImage();
                 if (image == null) {
-                    System.out.println("Failed to load image from URL: " + imageUrl); // Debug: Image loading failed
-                    return getDefaultImage(); // Return a default image if loading fails
+                    return getDefaultImage();
                 }
                 Image scaledImage = image.getScaledInstance(60, 60, Image.SCALE_SMOOTH);
                 return new ImageIcon(scaledImage);
             } else {
-                System.out.println("Image URL is null or empty"); // Debug: URL is invalid
-                return getDefaultImage(); // Return a default image if URL is invalid
+                return getDefaultImage();
             }
         } catch (Exception e) {
-            System.out.println("Error loading image: " + e.getMessage()); // Debug: Print the error
-            return getDefaultImage(); // Return a default image if an exception occurs
+            return getDefaultImage();
         }
     }
 
-    // Helper method to return a default image
     private ImageIcon getDefaultImage() {
-        return createDefaultPlaceholder();
-    }
-
-    // Method to create a default placeholder image
-    private ImageIcon createDefaultPlaceholder() {
         BufferedImage image = new BufferedImage(60, 60, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = image.createGraphics();
         g2d.setColor(Color.LIGHT_GRAY);
@@ -584,21 +817,10 @@ public class SalesHistoryPanel extends JPanel {
         btn.setFocusPainted(false);
         btn.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                btn.setBackground(bgColor.darker());
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                btn.setBackground(bgColor);
-            }
-        });
-
         return btn;
     }
 
-    private class SalesRecord {
+    private static class SalesRecord {
         final String barcodeNumber;
         final String category;
         final String productName;
@@ -624,24 +846,50 @@ public class SalesHistoryPanel extends JPanel {
         }
     }
 
+    private static class InvoiceData {
+        String shopName;
+        String shopAddress;
+        String invoiceNumber;
+        String invoiceDate;
+        String customerName;
+        String customerAddress;
+        String customerPhone;
+        String gstin;
+        String pan;
+        String placeOfSupply;
+        List<InvoiceItem> items;
+        double taxableValue;
+        double gstAmount;
+        double grandTotal;
+        double roundOff;
+    }
+
+    private static class InvoiceItem {
+        String description;
+        String hsnCode;
+        double quantity;
+        double rate;
+        double gstPercent;
+        double amount;
+    }
+
     private class ButtonCellRenderer extends JButton implements TableCellRenderer {
         public ButtonCellRenderer() {
             setOpaque(true);
-            setBackground(new Color(231, 76, 60)); // Red color for the button
+            setBackground(new Color(52, 152, 219));
             setForeground(Color.WHITE);
-            setText("Download PDF");
+            setText("Download");
             setFont(new Font("Segoe UI", Font.BOLD, 12));
-            setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY)); // Add border
+            setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
         }
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                                                       boolean isSelected, boolean hasFocus, int row, int column) {
-            // Customize appearance based on selection
             if (isSelected) {
-                setBackground(new Color(192, 57, 43)); // Darker red when selected
+                setBackground(new Color(41, 128, 185));
             } else {
-                setBackground(new Color(231, 76, 60)); // Default red
+                setBackground(new Color(52, 152, 219));
             }
             return this;
         }
@@ -652,31 +900,30 @@ public class SalesHistoryPanel extends JPanel {
         private int currentRow;
 
         public ButtonCellEditor() {
-            button = new JButton("Download PDF");
-            button.setBackground(new Color(46, 204, 113)); // Green color for the button
+            button = new JButton("Download");
+            button.setBackground(new Color(52, 152, 219));
             button.setForeground(Color.WHITE);
             button.setFont(new Font("Segoe UI", Font.BOLD, 12));
-            button.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY)); // Add border
+            button.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
             button.addActionListener(this);
         }
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value,
                                                     boolean isSelected, int row, int column) {
-            currentRow = row; // Track the current row being edited
+            currentRow = row;
             return button;
         }
 
         @Override
         public Object getCellEditorValue() {
-            return ""; // Return an empty string as the cell value
+            return "";
         }
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            // Trigger the download action when the button is clicked
             downloadProductPDF(currentRow);
-            fireEditingStopped(); // Stop editing after the action is performed
+            fireEditingStopped();
         }
 
         private void downloadProductPDF(int row) {
@@ -686,24 +933,53 @@ public class SalesHistoryPanel extends JPanel {
             double totalAmount = (Double) tableModel.getValueAt(row, 4);
             double finalPrice = (Double) tableModel.getValueAt(row, 5);
             String customerName = (String) tableModel.getValueAt(row, 7);
-            String seller = (String) tableModel.getValueAt(row, 8);
             String timestampStr = (String) tableModel.getValueAt(row, 9);
 
             try {
                 Date timestamp = timestampStr != null && !timestampStr.isEmpty() ? 
                     new SimpleDateFormat("EEE MMM dd").parse(timestampStr) : new Date();
 
-                // Create a SalesRecord object
                 SalesRecord record = new SalesRecord(
-                        barcodeNumber, category, productName, "", totalAmount, finalPrice, customerName, seller, timestamp
+                        barcodeNumber, category, productName, "", totalAmount, finalPrice, customerName, "", timestamp
                 );
 
-                // Generate and download the PDF
-                downloadInvoiceAsPDF(record, new ImageIcon());
+                downloadInvoiceAsPDF(createInvoiceData(record));
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(SalesHistoryPanel.this, 
                     "Error creating invoice: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
+        }
+        
+        private InvoiceData createInvoiceData(SalesRecord record) {
+            InvoiceData invoiceData = new InvoiceData();
+            invoiceData.shopName = "RJ JEWELS";
+            invoiceData.shopAddress = "123 Jewelry Street, Mumbai, Maharashtra 400001";
+            invoiceData.invoiceNumber = "INV-" + new SimpleDateFormat("yyyyMMdd").format(new Date()) + "-" + 
+                                      (int)(Math.random() * 1000);
+            invoiceData.invoiceDate = new SimpleDateFormat("dd/MM/yyyy").format(new Date());
+            
+            invoiceData.customerName = record.customerName;
+            invoiceData.customerPhone = "";
+            invoiceData.customerAddress = "";
+            invoiceData.gstin = "";
+            invoiceData.pan = "";
+            invoiceData.placeOfSupply = "27-Maharashtra";
+            
+            InvoiceItem item = new InvoiceItem();
+            item.description = record.productName;
+            item.hsnCode = "7117";
+            item.quantity = 1;
+            item.rate = record.totalPrice;
+            item.gstPercent = 3.0;
+            item.amount = record.totalPrice;
+            
+            invoiceData.items = Arrays.asList(item);
+            invoiceData.taxableValue = record.totalPrice;
+            invoiceData.gstAmount = record.finalPrice - record.totalPrice;
+            invoiceData.grandTotal = record.finalPrice;
+            invoiceData.roundOff = 0.0;
+            
+            return invoiceData;
         }
     }
 

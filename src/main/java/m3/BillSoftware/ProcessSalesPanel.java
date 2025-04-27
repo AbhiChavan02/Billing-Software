@@ -481,21 +481,25 @@ public class ProcessSalesPanel extends JPanel {
             JOptionPane.showMessageDialog(this, "Error processing sale: " + e.getMessage());
         }
     }
-
     private void generateInvoice(double totalPrice, double finalPrice, double savings) {
         InvoiceData invoiceData = new InvoiceData();
+
+        // Shop Details
         invoiceData.shopName = "SS GOLD";
-        invoiceData.shopAddress = "23, Brabourne Road, Purti Viraat, 5th Floor, Barabazar\nKolkata, Kolkata, West Bengal, 700001";
+        invoiceData.shopAddress = "23, Brabourne Road, Purti Viraat, 5th Floor, Barabazar\n" +
+                                  "Kolkata, Kolkata, West Bengal, 700001";
         invoiceData.invoiceNumber = "SSG/" + new Random().nextInt(100) + "/" + 
-                                  new SimpleDateFormat("dd-MM").format(new Date());
+                                    new SimpleDateFormat("dd-MM").format(new Date());
         invoiceData.invoiceDate = new SimpleDateFormat("dd/MM/yyyy").format(new Date());
+
+        // Customer Details
         invoiceData.customerName = txtName.getText();
         invoiceData.customerAddress = txtAddress.getText();
         invoiceData.customerPhone = txtPhoneNumber.getText();
         invoiceData.gstin = "";
         invoiceData.pan = "";
         invoiceData.placeOfSupply = "27-Maharashtra";
-        
+
         // Add items
         InvoiceItem item = new InvoiceItem();
         item.description = txtProductName.getText();
@@ -504,13 +508,15 @@ public class ProcessSalesPanel extends JPanel {
         item.rate = Double.parseDouble(txtPricePerGram.getText());
         item.gstPercent = 3.0;
         item.amount = totalPrice;
-        
+
         invoiceData.items = Arrays.asList(item);
+
+        // Tax and totals
         invoiceData.gstAmount = Double.parseDouble(txtGstAmount.getText());
         invoiceData.taxableValue = totalPrice;
         invoiceData.grandTotal = finalPrice;
         invoiceData.roundOff = finalPrice - (totalPrice + invoiceData.gstAmount);
-        
+
         // Create and show invoice dialog
         showInvoiceDialog(invoiceData);
     }
@@ -575,7 +581,7 @@ public class ProcessSalesPanel extends JPanel {
         
         // Invoice details
         JPanel invoiceDetailsPanel = new JPanel(new GridLayout(0, 2));
-        invoiceDetailsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        invoiceDetailsPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
         addInvoiceDetail(invoiceDetailsPanel, "Invoice No.", invoiceData.invoiceNumber);
         addInvoiceDetail(invoiceDetailsPanel, "Date", invoiceData.invoiceDate);
@@ -603,25 +609,75 @@ public class ProcessSalesPanel extends JPanel {
         itemsTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
         JScrollPane tableScrollPane = new JScrollPane(itemsTable);
         
-        // Totals section
+     // Totals section
         JPanel totalsPanel = new JPanel(new GridLayout(0, 3));
-        totalsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        
-        addTotalDetail(totalsPanel, "GST Amount (In words)", "Rupees " + convertToWords(invoiceData.gstAmount));
-        addTotalDetail(totalsPanel, "Discount", "");
-        addTotalDetail(totalsPanel, "P & F Charges", "");
-        addTotalDetail(totalsPanel, "", "Taxable Value");
-        addTotalDetail(totalsPanel, "", String.format("%.2f", invoiceData.taxableValue));
-        addTotalDetail(totalsPanel, "IGST " + invoiceData.items.get(0).gstPercent + "%", "");
-        addTotalDetail(totalsPanel, "", String.format("%.2f", invoiceData.gstAmount));
-        addTotalDetail(totalsPanel, "Discount", "");
-        addTotalDetail(totalsPanel, "", "0.00");
-        addTotalDetail(totalsPanel, "P & F Charge", "");
-        addTotalDetail(totalsPanel, "", "0.00");
-        addTotalDetail(totalsPanel, "Round Off", "");
-        addTotalDetail(totalsPanel, "", String.format("%.2f", invoiceData.roundOff));
-        addTotalDetail(totalsPanel, "Grand Total", "");
-        addTotalDetail(totalsPanel, "", String.format("%.2f", invoiceData.grandTotal));
+        totalsPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Add centered content directly
+        JLabel label;
+
+        label = new JLabel("GST Amount (In words)", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel("", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel("Rupees " + convertToWords(invoiceData.gstAmount), SwingConstants.CENTER);
+        totalsPanel.add(label);
+
+        label = new JLabel("Discount", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel("", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel("", SwingConstants.CENTER);
+        totalsPanel.add(label);
+
+        label = new JLabel("P & F Charges", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel("", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel("", SwingConstants.CENTER);
+        totalsPanel.add(label);
+
+        label = new JLabel("", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel("Taxable Value", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel(String.format("%.2f", invoiceData.taxableValue), SwingConstants.CENTER);
+        totalsPanel.add(label);
+
+        label = new JLabel("IGST " + invoiceData.items.get(0).gstPercent + "%", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel("", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel(String.format("%.2f", invoiceData.gstAmount), SwingConstants.CENTER);
+        totalsPanel.add(label);
+
+        label = new JLabel("Discount", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel("", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel("0.00", SwingConstants.CENTER);
+        totalsPanel.add(label);
+
+        label = new JLabel("P & F Charge", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel("", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel("0.00", SwingConstants.CENTER);
+        totalsPanel.add(label);
+
+        label = new JLabel("Round Off", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel("", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel(String.format("%.2f", invoiceData.roundOff), SwingConstants.CENTER);
+        totalsPanel.add(label);
+
+        label = new JLabel("Grand Total", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel("", SwingConstants.CENTER);
+        totalsPanel.add(label);
+        label = new JLabel(String.format("%.2f", invoiceData.grandTotal), SwingConstants.CENTER);
+        totalsPanel.add(label);
         
         // Terms and conditions
         JTextArea termsArea = new JTextArea();
@@ -781,13 +837,14 @@ public class ProcessSalesPanel extends JPanel {
         document.add(new Paragraph("Name & Address of the Receiptant (Billed To)", normalFont));
         document.add(new Paragraph(invoiceData.customerName, headerFont));
         document.add(new Paragraph(invoiceData.customerAddress + "\n", normalFont));
-        
         // Customer details
         document.add(new Paragraph("Mobile No.: " + invoiceData.customerPhone, normalFont));
         document.add(new Paragraph("GSTIN No.: " + invoiceData.gstin, normalFont));
         document.add(new Paragraph("PAN No.: " + invoiceData.pan, normalFont));
         document.add(new Paragraph("Place of Supply: " + invoiceData.placeOfSupply + "\n", normalFont));
         
+        // Add margin/space after customer details section
+        document.add(Chunk.NEWLINE); // This adds a blank line or margin
         // Invoice details table
         PdfPTable detailsTable = new PdfPTable(2);
         detailsTable.setWidthPercentage(100);
