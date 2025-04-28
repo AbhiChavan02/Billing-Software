@@ -686,7 +686,8 @@ public class SalesHistoryPanel extends JPanel {
         document.add(new Paragraph("GSTIN No.: " + invoiceData.gstin, normalFont));
         document.add(new Paragraph("PAN No.: " + invoiceData.pan, normalFont));
         document.add(new Paragraph("Place of Supply: " + invoiceData.placeOfSupply + "\n", normalFont));
-        
+        document.add(new Paragraph("-------------------------------------------------------------------------------------------------------------------------------------------------------------" + "\n", normalFont));
+       
         PdfPTable detailsTable = new PdfPTable(2);
         detailsTable.setWidthPercentage(100);
         
