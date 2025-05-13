@@ -43,7 +43,7 @@ public class DashboardGraph extends JPanel {
 
     private void initializeDatabaseConnection() {
         try {
-            mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/");
+            mongoClient = MongoClients.create("");
             database = mongoClient.getDatabase("testDB");
         } catch (Exception e) {
             showError("Database connection failed: " + e.getMessage());

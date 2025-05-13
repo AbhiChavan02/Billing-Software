@@ -133,7 +133,7 @@ public class StaffRegisteredProductsPanel extends JPanel {
     }
 
     private void loadProductData() {
-        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
+        try (MongoClient mongoClient = MongoClients.create("")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> productCollection = database.getCollection("Product");
             tableModel.setRowCount(0);
@@ -177,7 +177,7 @@ public class StaffRegisteredProductsPanel extends JPanel {
             return;
         }
 
-        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
+        try (MongoClient mongoClient = MongoClients.create("")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> productCollection = database.getCollection("Product");
 

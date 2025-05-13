@@ -37,7 +37,7 @@ import java.util.Random;
 import java.util.UUID;
 
 public class ProductRegistration extends JFrame {
-    private static final String MONGODB_URI = "mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/";
+    private static final String MONGODB_URI = "";
     private static final String DATABASE_NAME = "testDB";
     
     private JPanel menuPanel, contentPanel;
@@ -547,7 +547,7 @@ public class ProductRegistration extends JFrame {
 }
 
 class ProductRegistrationPanel extends JPanel {
-    private static final String MONGODB_URI = "mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/";
+    private static final String MONGODB_URI = "";
     private static final String DATABASE_NAME = "testDB";
     
     private JTextField txtProductName, txtStockQuantity, txtPurchasePrice, txtSalesPrice, txtGrams;
@@ -569,9 +569,9 @@ class ProductRegistrationPanel extends JPanel {
 
     private void initializeCloudinary() {
         Map<String, String> config = new HashMap<>();
-        config.put("cloud_name", "dkcxniwte");
-        config.put("api_key", "872993699858565");
-        config.put("api_secret", "qWa0j2TzlDi7gITYZpaQbwkYKGg");
+        config.put("cloud_name", "");
+        config.put("api_key", "");
+        config.put("api_secret", "");
         cloudinary = new Cloudinary(config);
     }
 

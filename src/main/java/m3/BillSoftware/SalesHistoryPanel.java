@@ -62,7 +62,7 @@ public class SalesHistoryPanel extends JPanel {
         executorService = Executors.newFixedThreadPool(2);
         executorService.execute(() -> {
             try {
-                mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/");
+                mongoClient = MongoClients.create("");
                 database = mongoClient.getDatabase("testDB");
                 database.listCollectionNames().first();
             } catch (Exception e) {

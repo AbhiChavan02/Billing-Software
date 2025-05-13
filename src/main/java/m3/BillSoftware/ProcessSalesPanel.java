@@ -306,7 +306,7 @@ public class ProcessSalesPanel extends JPanel {
     }
 
     private void fetchProductDetails() {
-        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
+        try (MongoClient mongoClient = MongoClients.create("")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> productCollection = database.getCollection("Product");
 
@@ -441,7 +441,7 @@ public class ProcessSalesPanel extends JPanel {
             double finalPrice = Double.parseDouble(txtFinalPrice.getText());
             double savings = totalPrice - finalPrice;
 
-            try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
+            try (MongoClient mongoClient = MongoClients.create(".")) {
                 MongoDatabase database = mongoClient.getDatabase("testDB");
                 MongoCollection<Document> salesCollection = database.getCollection("Sales");
                 MongoCollection<Document> productCollection = database.getCollection("Product");

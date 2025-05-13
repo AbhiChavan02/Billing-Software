@@ -306,7 +306,7 @@ public class RegisteredProductsPanel extends JPanel {
     
     
     private void initializeMongoDB() {
-        mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/");
+        mongoClient = MongoClients.create("");
         MongoDatabase database = mongoClient.getDatabase("testDB");
         productCollection = database.getCollection("Product");
     }
@@ -452,7 +452,7 @@ public class RegisteredProductsPanel extends JPanel {
 
     // Update product data
     private void updateProductData(int rowIndex) {
-        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
+        try (MongoClient mongoClient = MongoClients.create("")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> productCollection = database.getCollection("Product");
 
@@ -554,7 +554,7 @@ public class RegisteredProductsPanel extends JPanel {
 
     // Delete product data
     private void deleteProductData(int rowIndex) {
-        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
+        try (MongoClient mongoClient = MongoClients.create("")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> productCollection = database.getCollection("Product");
 

@@ -190,7 +190,7 @@ public class AdminLoginRegister extends JFrame {
         String username = txtUsername.getText();
         String password = new String(txtPassword.getPassword());
 
-        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
+        try (MongoClient mongoClient = MongoClients.create("")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> collection = database.getCollection("User");
 
@@ -208,7 +208,7 @@ public class AdminLoginRegister extends JFrame {
     }
 
     private void handleRegister() {
-        try (MongoClient mongoClient = MongoClients.create("mongodb+srv://abhijeetchavan212002:Abhi%40212002@cluster0.dkki2.mongodb.net/")) {
+        try (MongoClient mongoClient = MongoClients.create("")) {
             MongoDatabase database = mongoClient.getDatabase("testDB");
             MongoCollection<Document> collection = database.getCollection("User");
 
